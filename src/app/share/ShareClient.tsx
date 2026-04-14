@@ -13,7 +13,7 @@ const DEFAULT_SHARE: ShareConfig = {
   title: "微信分享 POC 演示",
   desc: "这是一个 Next.js 微信分享功能的概念验证页面，点击查看详情",
   link: "",
-  imgUrl: "https://picsum.photos/300/300",
+  imgUrl: typeof window !== "undefined" ? `${window.location.origin}/share-icon.png` : "/share-icon.png",
 };
 
 export default function ShareClient() {
@@ -31,9 +31,11 @@ export default function ShareClient() {
 
   useEffect(() => {
     const url = window.location.href.split("#")[0];
+    const origin = window.location.origin;
     const shareLink = url;
-    setConfig((prev) => ({ ...prev, link: shareLink }));
-    configRef.current = { ...DEFAULT_SHARE, link: shareLink };
+    const shareImg = `${origin}/share-icon.png`;
+    setConfig((prev) => ({ ...prev, link: shareLink, imgUrl: shareImg }));
+    configRef.current = { ...DEFAULT_SHARE, link: shareLink, imgUrl: shareImg };
 
     addLog(`当前页面 URL: ${url}`);
     addLog("开始请求微信 JS-SDK 签名...");
