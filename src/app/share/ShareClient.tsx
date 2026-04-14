@@ -13,7 +13,7 @@ const DEFAULT_SHARE: ShareConfig = {
   title: "微信分享 POC 演示",
   desc: "这是一个 Next.js 微信分享功能的概念验证页面",
   link: "",
-  imgUrl: "https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico",
+  imgUrl: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4dd.png",
 };
 
 export default function ShareClient() {
