@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ShareConfig {
   title: string;
@@ -11,15 +11,16 @@ interface ShareConfig {
 
 const DEFAULT_SHARE: ShareConfig = {
   title: "微信分享 POC 演示",
-  desc: "这是一个 Next.js 微信分享功能的概念验证页面",
+  desc: "这是一个 Next.js 微信分享功能的概念验证页面，点击查看详情",
   link: "",
-  imgUrl: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4dd.png",
+  imgUrl: "https://picsum.photos/300/300",
 };
 
 export default function ShareClient() {
   const [config, setConfig] = useState<ShareConfig>(DEFAULT_SHARE);
   const [status, setStatus] = useState("等待初始化...");
   const [debugLog, setDebugLog] = useState<string[]>([]);
+  const configRef = useRef<ShareConfig>(DEFAULT_SHARE);
 
   const addLog = (msg: string) => {
     setDebugLog((prev) => [
@@ -30,7 +31,9 @@ export default function ShareClient() {
 
   useEffect(() => {
     const url = window.location.href.split("#")[0];
-    setConfig((prev) => ({ ...prev, link: url }));
+    const shareLink = url;
+    setConfig((prev) => ({ ...prev, link: shareLink }));
+    configRef.current = { ...DEFAULT_SHARE, link: shareLink };
 
     addLog(`当前页面 URL: ${url}`);
     addLog("开始请求微信 JS-SDK 签名...");
@@ -56,8 +59,9 @@ export default function ShareClient() {
           return;
         }
 
+        addLog("正在调用 wx.config...");
         window.wx.config({
-          debug: false,
+          debug: true,
           appId: data.appId,
           timestamp: data.timestamp,
           nonceStr: data.nonceStr,
@@ -73,17 +77,42 @@ export default function ShareClient() {
         window.wx.ready(() => {
           addLog("✅ wx.config 配置成功 (wx.ready)");
 
+          const shareData = {
+            title: configRef.current.title,
+            desc: configRef.current.desc,
+            link: configRef.current.link || url,
+            imgUrl: configRef.current.imgUrl,
+          };
+
+          addLog(`分享标题: ${shareData.title}`);
+          addLog(`分享描述: ${shareData.desc}`);
+          addLog(`分享链接: ${shareData.link}`);
+          addLog(`分享图片: ${shareData.imgUrl}`);
+
           window.wx.updateAppMessageShareData({
-            title: config.title,
-            desc: config.desc,
-            link: config.link || url,
-            imgUrl: config.imgUrl,
+            title: shareData.title,
+            desc: shareData.desc,
+            link: shareData.link,
+            imgUrl: shareData.imgUrl,
           });
 
           window.wx.updateTimelineShareData({
-            title: config.title,
-            link: config.link || url,
-            imgUrl: config.imgUrl,
+            title: shareData.title,
+            link: shareData.link,
+            imgUrl: shareData.imgUrl,
+          });
+
+          window.wx.onMenuShareAppMessage({
+            title: shareData.title,
+            desc: shareData.desc,
+            link: shareData.link,
+            imgUrl: shareData.imgUrl,
+          });
+
+          window.wx.onMenuShareTimeline({
+            title: shareData.title,
+            link: shareData.link,
+            imgUrl: shareData.imgUrl,
           });
 
           setStatus("✅ 微信分享已配置成功！");
@@ -102,11 +131,23 @@ export default function ShareClient() {
 
   const handleShareClick = () => {
     if (typeof window.wx !== "undefined") {
-      window.wx.updateAppMessageShareData({
+      const shareData = {
         title: config.title,
         desc: config.desc,
         link: config.link,
         imgUrl: config.imgUrl,
+      };
+      window.wx.updateAppMessageShareData(shareData);
+      window.wx.updateTimelineShareData({
+        title: shareData.title,
+        link: shareData.link,
+        imgUrl: shareData.imgUrl,
+      });
+      window.wx.onMenuShareAppMessage(shareData);
+      window.wx.onMenuShareTimeline({
+        title: shareData.title,
+        link: shareData.link,
+        imgUrl: shareData.imgUrl,
       });
       addLog("已更新分享内容");
     } else {
@@ -137,9 +178,10 @@ export default function ShareClient() {
               <input
                 type="text"
                 value={config.title}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, title: e.target.value }))
-                }
+                onChange={(e) => {
+                  setConfig((prev) => ({ ...prev, title: e.target.value }));
+                  configRef.current = { ...configRef.current, title: e.target.value };
+                }}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
@@ -150,9 +192,10 @@ export default function ShareClient() {
               </label>
               <textarea
                 value={config.desc}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, desc: e.target.value }))
-                }
+                onChange={(e) => {
+                  setConfig((prev) => ({ ...prev, desc: e.target.value }));
+                  configRef.current = { ...configRef.current, desc: e.target.value };
+                }}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none resize-none"
                 rows={3}
               />
@@ -165,9 +208,10 @@ export default function ShareClient() {
               <input
                 type="text"
                 value={config.link}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, link: e.target.value }))
-                }
+                onChange={(e) => {
+                  setConfig((prev) => ({ ...prev, link: e.target.value }));
+                  configRef.current = { ...configRef.current, link: e.target.value };
+                }}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
@@ -179,9 +223,10 @@ export default function ShareClient() {
               <input
                 type="text"
                 value={config.imgUrl}
-                onChange={(e) =>
-                  setConfig((prev) => ({ ...prev, imgUrl: e.target.value }))
-                }
+                onChange={(e) => {
+                  setConfig((prev) => ({ ...prev, imgUrl: e.target.value }));
+                  configRef.current = { ...configRef.current, imgUrl: e.target.value };
+                }}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </div>
@@ -236,6 +281,7 @@ export default function ShareClient() {
               JS安全域名
             </li>
             <li>非微信环境下仅可查看签名流程，无法调用分享接口</li>
+            <li>debug 模式已开启，微信中会弹出调试信息</li>
           </ul>
         </div>
       </div>
