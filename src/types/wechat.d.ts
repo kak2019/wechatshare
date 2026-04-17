@@ -22,10 +22,21 @@ interface WxSdk {
   config(config: WxConfig): void;
   ready(callback: () => void): void;
   error(callback: (res: WxError) => void): void;
-  updateAppMessageShareData(data: ShareData, success?: () => void): void;
-  updateTimelineShareData(data: ShareData, success?: () => void): void;
+  checkJsApi(options: {
+    jsApiList: string[];
+    success?: (res: { checkResult?: Record<string, boolean> }) => void;
+    fail?: (res: WxError) => void;
+  }): void;
+  updateAppMessageShareData(data: ShareData & {
+    success?: () => void;
+    fail?: (res: WxError) => void;
+  }): void;
+  updateTimelineShareData(data: Omit<ShareData, "desc"> & {
+    success?: () => void;
+    fail?: (res: WxError) => void;
+  }): void;
   onMenuShareAppMessage(data: ShareData): void;
-  onMenuShareTimeline(data: ShareData): void;
+  onMenuShareTimeline(data: Omit<ShareData, "desc">): void;
 }
 
 declare global {
