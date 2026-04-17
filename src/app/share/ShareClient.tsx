@@ -29,6 +29,36 @@ export default function ShareClient() {
     ]);
   };
 
+  const applyShareConfig = (shareData: ShareConfig) => {
+    if (typeof window.wx === "undefined") {
+      addLog("⚠️ 非微信环境，无法调用分享接口");
+      return;
+    }
+
+    window.wx.onMenuShareAppMessage(shareData);
+    window.wx.onMenuShareTimeline({
+      title: shareData.title,
+      link: shareData.link,
+      imgUrl: shareData.imgUrl,
+    });
+    addLog("✅ 已配置旧版分享接口(onMenuShare*)");
+
+    window.wx.updateAppMessageShareData({
+      ...shareData,
+      success: () => addLog("✅ updateAppMessageShareData 成功"),
+      fail: (res: { errMsg: string }) =>
+        addLog(`⚠️ updateAppMessageShareData 失败: ${res.errMsg}`),
+    });
+    window.wx.updateTimelineShareData({
+      title: shareData.title,
+      link: shareData.link,
+      imgUrl: shareData.imgUrl,
+      success: () => addLog("✅ updateTimelineShareData 成功"),
+      fail: (res: { errMsg: string }) =>
+        addLog(`⚠️ updateTimelineShareData 失败: ${res.errMsg}`),
+    });
+  };
+
   useEffect(() => {
     const url = window.location.href.split("#")[0];
     const origin = window.location.origin;
@@ -91,33 +121,24 @@ export default function ShareClient() {
           addLog(`分享链接: ${shareData.link}`);
           addLog(`分享图片: ${shareData.imgUrl}`);
 
-          window.wx.updateAppMessageShareData({
-            title: shareData.title,
-            desc: shareData.desc,
-            link: shareData.link,
-            imgUrl: shareData.imgUrl,
+          window.wx.checkJsApi({
+            jsApiList: [
+              "updateAppMessageShareData",
+              "updateTimelineShareData",
+              "onMenuShareAppMessage",
+              "onMenuShareTimeline",
+            ],
+            success: (res: { checkResult?: Record<string, boolean> }) => {
+              addLog(`checkJsApi: ${JSON.stringify(res.checkResult ?? {})}`);
+              applyShareConfig(shareData);
+              setStatus("✅ 微信分享已配置（含降级策略）");
+            },
+            fail: (res: { errMsg: string }) => {
+              addLog(`⚠️ checkJsApi 失败: ${res.errMsg}`);
+              applyShareConfig(shareData);
+              setStatus("⚠️ checkJsApi 失败，已尝试降级配置分享");
+            },
           });
-
-          window.wx.updateTimelineShareData({
-            title: shareData.title,
-            link: shareData.link,
-            imgUrl: shareData.imgUrl,
-          });
-
-          window.wx.onMenuShareAppMessage({
-            title: shareData.title,
-            desc: shareData.desc,
-            link: shareData.link,
-            imgUrl: shareData.imgUrl,
-          });
-
-          window.wx.onMenuShareTimeline({
-            title: shareData.title,
-            link: shareData.link,
-            imgUrl: shareData.imgUrl,
-          });
-
-          setStatus("✅ 微信分享已配置成功！");
         });
 
         window.wx.error((res: { errMsg: string }) => {
@@ -139,18 +160,7 @@ export default function ShareClient() {
         link: config.link,
         imgUrl: config.imgUrl,
       };
-      window.wx.updateAppMessageShareData(shareData);
-      window.wx.updateTimelineShareData({
-        title: shareData.title,
-        link: shareData.link,
-        imgUrl: shareData.imgUrl,
-      });
-      window.wx.onMenuShareAppMessage(shareData);
-      window.wx.onMenuShareTimeline({
-        title: shareData.title,
-        link: shareData.link,
-        imgUrl: shareData.imgUrl,
-      });
+      applyShareConfig(shareData);
       addLog("已更新分享内容");
     } else {
       addLog("⚠️ 非微信环境，无法调用分享接口");
