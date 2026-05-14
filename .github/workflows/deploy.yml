@@ -11,6 +11,10 @@
 #
 # 可选：GIT_BRANCH 不设则默认拉取 main（若你正式分支不叫 main，可建该 Secret）
 #
+# 说明：服务器上若跑过 next build，可能改动已跟踪文件（如 next-env.d.ts），或有人改过
+# public/ 等资源，会导致 git pull 拒绝合并。部署脚本使用 fetch + reset --hard 与远端对齐
+#（仅影响 Git 跟踪的文件；未跟踪的 .env.production 等会保留）。
+#
 # SSH 非 22 时：在 appleboy/ssh-action 的 with: 下增加 port: 端口
 #
 name: Deploy to server (SSH)
@@ -45,7 +49,7 @@ jobs:
             cd "$DEPLOY_PATH"
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
-            git pull origin "$BRANCH"
+            git reset --hard "origin/$BRANCH"
             npm ci
             npm run build
             if pm2 describe "$PM2_NAME" > /dev/null 2>&1; then
