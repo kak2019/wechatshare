@@ -52,80 +52,22 @@ export function EmbyLibraryClient({ embyUrl }: EmbyLibraryClientProps) {
           />
         </motion.div>
 
-        <motion.section
-          className="mt-10 rounded-3xl bg-white p-7 shadow-[0_2px_40px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04] sm:p-9"
-          initial={{ opacity: 0, y: 18 }}
+        <motion.div
+          className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.8, ease: easeApple }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.65, ease: easeApple }}
         >
-          <h2 className="text-lg font-semibold tracking-tight text-[#1d1d1f]">
-            如果中间是一片空白？
-          </h2>
-          <p className="mt-3 text-sm leading-relaxed text-[#6e6e73]">
-            常见两类空白：① Emby 的{" "}
-            <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem] text-[#1d1d1f]">
-              X-Frame-Options
-            </code>{" "}
-            / CSP 禁止被外链嵌入；②{" "}
-            <strong className="font-medium text-[#1d1d1f]">主站是 HTTPS</strong>（如{" "}
-            <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">flynt.top</code>
-            ）而 iframe 里是 <strong className="font-medium text-[#1d1d1f]">HTTP</strong>
-            ，浏览器会按「混合内容」直接拦掉——<strong className="font-medium text-[#1d1d1f]">
-              与是不是同一站长无关
-            </strong>
-            ，前端没法绕过。可用下面按钮新开窗口访问。
-          </p>
-          <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-[#6e6e73]">
-            <li>
-              <strong className="font-medium text-[#1d1d1f]">想真正嵌进 iframe：</strong>
-              给{" "}
-              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
-                app.flynt.top
-              </code>{" "}
-              做 <strong className="font-medium text-[#1d1d1f]">HTTPS</strong>（Nginx/Caddy
-              反代本机 8096 到 443，或给该主机名签发证书），iframe 的{" "}
-              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">src</code>{" "}
-              也要改成 <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">https://…</code>
-              。
-            </li>
-            <li>
-              仅改前端、不把 Emby 升为 HTTPS 时，在{" "}
-              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
-                https://flynt.top
-              </code>{" "}
-              里嵌{" "}
-              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
-                http://app.flynt.top:8096
-              </code>
-              ，多数浏览器仍会空白——这是浏览器的混合内容策略，不是 Next.js 「只允许 https」。
-            </li>
-            <li>
-              环境变量{" "}
-              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
-                NEXT_PUBLIC_EMBY_URL
-              </code>{" "}
-              请写成完整地址；已配好 HTTPS 后改为{" "}
-              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
-                https://app.flynt.top...
-              </code>{" "}
-              并重新构建（Next 会在构建时内联该变量）。
-            </li>
-          </ul>
-          <div className="mt-7 flex flex-wrap items-center gap-4">
-            <a
-              href={embyUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full bg-[#1d1d1f] px-7 py-3 text-sm font-medium text-white shadow-[0_12px_40px_rgba(0,0,0,0.22)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              新窗口打开 Emby
-            </a>
-            <p className="text-xs text-[#86868b]">
-              当前嵌入地址：<span className="break-all">{embyUrl}</span>
-            </p>
-          </div>
-        </motion.section>
+          <a
+            href={embyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center rounded-full border border-black/[0.08] bg-white px-6 py-2.5 text-sm font-medium text-[#1d1d1f] shadow-[0_2px_24px_rgba(0,0,0,0.06)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            新窗口打开 Emby
+          </a>
+        </motion.div>
       </main>
     </div>
   );
