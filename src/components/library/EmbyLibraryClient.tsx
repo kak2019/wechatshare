@@ -63,25 +63,53 @@ export function EmbyLibraryClient({ embyUrl }: EmbyLibraryClientProps) {
             如果中间是一片空白？
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-[#6e6e73]">
-            很多 Emby 默认会禁止在「别的域名」的{" "}
+            常见两类空白：① Emby 的{" "}
             <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem] text-[#1d1d1f]">
-              iframe
+              X-Frame-Options
             </code>{" "}
-            里打开，浏览器会拦下嵌入（你仍可在新标签页正常观看）。若你能登录服务器，可在 Emby
-            后台 / 反向代理里调整响应头，或继续用下面的按钮直接打开库页面。
+            / CSP 禁止被外链嵌入；②{" "}
+            <strong className="font-medium text-[#1d1d1f]">主站是 HTTPS</strong>（如{" "}
+            <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">flynt.top</code>
+            ）而 iframe 里是 <strong className="font-medium text-[#1d1d1f]">HTTP</strong>
+            ，浏览器会按「混合内容」直接拦掉——<strong className="font-medium text-[#1d1d1f]">
+              与是不是同一站长无关
+            </strong>
+            ，前端没法绕过。可用下面按钮新开窗口访问。
           </p>
           <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-[#6e6e73]">
             <li>
-              本站是 <strong className="font-medium text-[#1d1d1f]">HTTPS</strong> 时，嵌入{" "}
-              <strong className="font-medium text-[#1d1d1f]">HTTP</strong>{" "}
-              的 Emby 会被浏览器拦截（混合内容）；需要给 Emby 也配置上 HTTPS / 反代。
+              <strong className="font-medium text-[#1d1d1f]">想真正嵌进 iframe：</strong>
+              给{" "}
+              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
+                app.flynt.top
+              </code>{" "}
+              做 <strong className="font-medium text-[#1d1d1f]">HTTPS</strong>（Nginx/Caddy
+              反代本机 8096 到 443，或给该主机名签发证书），iframe 的{" "}
+              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">src</code>{" "}
+              也要改成 <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">https://…</code>
+              。
             </li>
             <li>
-              域名、端口变更时，设置环境变量{" "}
+              仅改前端、不把 Emby 升为 HTTPS 时，在{" "}
+              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
+                https://flynt.top
+              </code>{" "}
+              里嵌{" "}
+              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
+                http://app.flynt.top:8096
+              </code>
+              ，多数浏览器仍会空白——这是浏览器的混合内容策略，不是 Next.js 「只允许 https」。
+            </li>
+            <li>
+              环境变量{" "}
               <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
                 NEXT_PUBLIC_EMBY_URL
               </code>{" "}
-              为完整地址（含协议）。
+              请写成完整地址；已配好 HTTPS 后改为{" "}
+              <code className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[0.8rem]">
+                https://app.flynt.top...
+              </code>{" "}
+              并重新构建（Next 会在构建时内联该变量）。
             </li>
           </ul>
           <div className="mt-7 flex flex-wrap items-center gap-4">
