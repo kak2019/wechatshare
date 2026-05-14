@@ -74,19 +74,8 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
                 preload="metadata"
               />
             ) : (
-              <div className="flex h-full min-h-[min(52vh,440px)] w-full flex-col items-center justify-center gap-4 bg-gradient-to-br from-[#2a2a2c] to-[#111] px-8 text-center">
-                <p className="text-lg font-medium text-white/90">在这里放上你们的影片</p>
-                <p className="max-w-md text-sm leading-relaxed text-white/55">
-                  配置环境变量{" "}
-                  <code className="rounded bg-white/10 px-2 py-0.5 text-xs text-amber-100/90">
-                    NEXT_PUBLIC_COUPLE_VIDEO_URL
-                  </code>{" "}
-                  指向 mp4 / m3u8 等地址；或在项目中把下方默认路径改为{" "}
-                  <code className="rounded bg-white/10 px-2 py-0.5 text-xs text-amber-100/90">
-                    /our-story.mp4
-                  </code>{" "}
-                  并放入对应文件。
-                </p>
+              <div className="flex h-full min-h-[min(52vh,440px)] w-full flex-col items-center justify-center bg-gradient-to-br from-[#2a2a2c] to-[#111] px-8 text-center">
+                <p className="text-lg font-medium text-white/85">我们的影片，慢慢补齐</p>
               </div>
             )}
           </div>
@@ -188,16 +177,6 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
         </motion.button>
       )}
 
-      {open && videoSrc && (
-        <motion.p
-          className="relative z-10 mt-6 text-center text-xs text-[#6e6e73]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.35 }}
-        >
-          若未自动播放，轻触播放器上的播放键即可。
-        </motion.p>
-      )}
     </section>
   );
 }

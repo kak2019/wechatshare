@@ -132,9 +132,6 @@ export function LoveScrollSections() {
           <p className="mt-8 text-2xl font-medium leading-snug tracking-tight text-white/95 sm:text-3xl">
             “谢谢你愿意和我共享这辈子最普通的天气。”
           </p>
-          <p className="mt-8 text-sm text-white/45">
-            —— 页面里的「一二 / 布布」氛围来自温暖配色与原创插画轮廓；若你有正版素材，也可自行替换为图片。
-          </p>
         </motion.div>
 
         <div className="relative mt-16 min-h-[120px]">
