@@ -3,6 +3,13 @@
 :root {
   --background: #fafafa;
   --foreground: #1d1d1f;
+  --cream: #fafafa;
+  --paper: #fff9eb;
+  --amber: #ffc93c;
+  --peach: #ff9f43;
+  --rose: #f43f5e;
+  --ink: #1d1d1f;
+  --mute: #6e6e73;
 }
 
 @theme inline {
@@ -11,6 +18,9 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-hand-en: var(--font-hand-en), "Caveat", cursive;
+  --font-hand-zh: var(--font-hand-zh), "Ma Shan Zheng", "STXingkai",
+    "KaiTi", cursive;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -27,6 +37,32 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+
+/* 深夜模式：温柔星空 */
+html[data-night="true"] {
+  --background: #0f0d12;
+  --foreground: #f5e9d4;
+  --cream: #0f0d12;
+  --paper: #1d1822;
+  --mute: #a89a85;
+}
+
+html[data-night="true"] body {
+  background: radial-gradient(
+      ellipse at top,
+      #1c1622 0%,
+      #0f0d12 60%
+    );
+}
+
+.font-hand-en {
+  font-family: var(--font-hand-en), "Caveat", cursive;
+}
+
+.font-hand-zh {
+  font-family: var(--font-hand-zh), "Ma Shan Zheng", cursive;
 }
 
 @keyframes float-dust {
@@ -39,4 +75,42 @@ body {
     transform: translateY(-14px) scale(1.05);
     opacity: 0.65;
   }
+}
+
+@keyframes vinyl-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes marquee-up {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.heart-ping {
+  position: absolute;
+  pointer-events: none;
+  font-size: 18px;
+  user-select: none;
+  will-change: transform, opacity;
 }
