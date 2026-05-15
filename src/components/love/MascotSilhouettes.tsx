@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 
 /** 原创简约插画：圆滚滚的「布布系」双人轮廓 + 线条小狗，避免使用官方表情包素材 */
 
@@ -65,13 +66,37 @@ export function CoupleBlobs() {
 }
 
 export function LineDogOutline() {
+  const [, setClicks] = useState(0);
+  const [bubble, setBubble] = useState(false);
+
+  const onClick = () => {
+    setClicks((c) => {
+      const next = c + 1;
+      if (next >= 5) {
+        setBubble(true);
+        window.setTimeout(() => setBubble(false), 1800);
+        return 0;
+      }
+      return next;
+    });
+  };
+
   return (
     <motion.div
-      className="pointer-events-none absolute bottom-[6%] left-1/2 w-[min(340px,85vw)] -translate-x-1/2"
+      className="relative left-1/2 w-[min(340px,85vw)] -translate-x-1/2 cursor-pointer"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      aria-hidden
+      aria-label="敲敲线条小狗"
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <svg viewBox="0 0 400 120" className="w-full" fill="none">
         <motion.path
@@ -113,7 +138,33 @@ export function LineDogOutline() {
           animate={{ pathLength: 1 }}
           transition={{ delay: 1.9, duration: 0.5 }}
         />
+        {/* 尾巴：连点 5 次会摇一摇 */}
+        <motion.path
+          d="M320 96 Q 348 80, 360 56"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          fill="none"
+          className="text-[#1d1d1f]/40"
+          style={{ originX: "320px", originY: "96px" }}
+          animate={bubble ? { rotate: [0, 18, -18, 18, -10, 0] } : { rotate: 0 }}
+          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        />
       </svg>
+
+      <AnimatePresence>
+        {bubble ? (
+          <motion.div
+            className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full rounded-full bg-[#1d1d1f] px-4 py-2 text-sm font-medium text-white shadow-xl"
+            initial={{ opacity: 0, y: 8, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.8 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
+            汪～你被发现啦 🐾
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </motion.div>
   );
 }

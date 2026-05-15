@@ -2,7 +2,13 @@
 
 import { motion } from "framer-motion";
 
+import { CounterSection } from "./CounterSection";
 import { LineDogOutline } from "./MascotSilhouettes";
+import { MapSection } from "./MapSection";
+import { PlaylistSection } from "./PlaylistSection";
+import { PolaroidsSection } from "./PolaroidsSection";
+import { TimelineSection } from "./TimelineSection";
+import { WishlistSection } from "./WishlistSection";
 
 const moments = [
   {
@@ -37,13 +43,17 @@ const fadeUp = {
 
 export function LoveScrollSections() {
   return (
-    <div className="relative bg-[#fafafa]">
+    <div className="relative bg-[var(--background)]">
+      {/* 倒数日 */}
+      <CounterSection />
+
+      {/* 故事 */}
       <section
         id="story"
-        className="mx-auto max-w-5xl px-6 py-28 sm:py-36"
+        className="mx-auto max-w-5xl px-6 pb-16 pt-12 sm:pb-24 sm:pt-20"
       >
         <motion.p
-          className="text-center text-xs font-semibold uppercase tracking-[0.4em] text-[#6e6e73]"
+          className="text-center text-xs font-semibold uppercase tracking-[0.4em] text-[var(--mute)]"
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-80px" }}
@@ -59,7 +69,7 @@ export function LoveScrollSections() {
           A story for us
         </motion.p>
         <motion.h2
-          className="mt-6 text-center text-4xl font-semibold tracking-tight text-[#1d1d1f] sm:text-6xl sm:leading-[1.05]"
+          className="mt-6 text-center text-4xl font-semibold tracking-tight text-[var(--foreground)] sm:text-6xl sm:leading-[1.05]"
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-80px" }}
@@ -78,7 +88,7 @@ export function LoveScrollSections() {
           </span>
         </motion.h2>
         <motion.p
-          className="mx-auto mt-8 max-w-2xl text-center text-lg leading-relaxed text-[#6e6e73] sm:text-xl"
+          className="mx-auto mt-8 max-w-2xl text-center text-lg leading-relaxed text-[var(--mute)] sm:text-xl"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
@@ -88,9 +98,10 @@ export function LoveScrollSections() {
         </motion.p>
       </section>
 
+      {/* 瞬间三章 */}
       <section
         id="moments"
-        className="mx-auto max-w-6xl px-6 pb-28 sm:pb-36"
+        className="mx-auto max-w-6xl px-6 pb-24 sm:pb-32"
       >
         <div className="grid gap-6 md:grid-cols-3">
           {moments.map((m, i) => (
@@ -107,10 +118,10 @@ export function LoveScrollSections() {
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#ae8a3d]">
                 {m.date}
               </p>
-              <h3 className="mt-4 text-xl font-semibold tracking-tight text-[#1d1d1f]">
+              <h3 className="mt-4 text-xl font-semibold tracking-tight text-[var(--foreground)]">
                 {m.title}
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-[#6e6e73]">
+              <p className="mt-3 text-sm leading-relaxed text-[var(--mute)]">
                 {m.body}
               </p>
             </motion.article>
@@ -118,6 +129,22 @@ export function LoveScrollSections() {
         </div>
       </section>
 
+      {/* 时间轴 */}
+      <TimelineSection />
+
+      {/* 照片墙 */}
+      <PolaroidsSection />
+
+      {/* 歌单 */}
+      <PlaylistSection />
+
+      {/* 足迹地图 */}
+      <MapSection />
+
+      {/* 心愿清单 */}
+      <WishlistSection />
+
+      {/* 引言 + 线条小狗 */}
       <section className="relative mx-auto max-w-4xl px-6 pb-32 text-center">
         <motion.div
           className="rounded-[32px] bg-[#1d1d1f] px-8 py-16 text-white shadow-[0_40px_100px_rgba(0,0,0,0.22)] sm:px-16 sm:py-20"
@@ -130,11 +157,11 @@ export function LoveScrollSections() {
             今天也想对你说
           </p>
           <p className="mt-8 text-2xl font-medium leading-snug tracking-tight text-white/95 sm:text-3xl">
-            “谢谢你愿意和我共享这辈子最普通的天气。”
+            &ldquo;谢谢你愿意和我共享这辈子最普通的天气。&rdquo;
           </p>
         </motion.div>
 
-        <div className="relative mt-16 min-h-[120px]">
+        <div className="relative mt-16 min-h-[160px]">
           <LineDogOutline />
         </div>
       </section>

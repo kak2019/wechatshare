@@ -13,6 +13,12 @@ export function SiteFooter() {
         </div>
         <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-[#424245] sm:justify-end">
           <Link
+            href="/letters"
+            className="transition-colors hover:text-[#1d1d1f]"
+          >
+            信箱
+          </Link>
+          <Link
             href="/library"
             className="transition-colors hover:text-[#1d1d1f]"
           >
