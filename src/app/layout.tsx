@@ -1,10 +1,12 @@
-import type { Metadata } from "next";
-import Script from "next/script";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Caveat, Ma_Shan_Zheng } from "next/font/google";
 import "./globals.css";
 
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GlobalEasterEggs } from "@/components/site/GlobalEasterEggs";
+import { PwaInstallHint } from "@/components/site/PwaInstallHint";
+import { PwaRegister } from "@/components/site/PwaRegister";
+import { PWA, SITE_META } from "@/content/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,8 +32,32 @@ const maShanZheng = Ma_Shan_Zheng({
 });
 
 export const metadata: Metadata = {
-  title: "我俩的时光｜恋爱手帐",
-  description: "记录我和宝子的恋爱时光 — 私人手帐站点",
+  title: SITE_META.default.title,
+  description: SITE_META.default.description,
+  applicationName: PWA.shortName,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: PWA.shortName,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: PWA.themeColor,
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -44,16 +70,12 @@ export default function RootLayout({
       lang="zh-CN"
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${maShanZheng.variable} h-full scroll-smooth antialiased`}
     >
-      <head>
-        <Script
-          src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"
-          strategy="beforeInteractive"
-        />
-      </head    >
       <body className="flex min-h-full flex-col font-sans">
         <div className="flex-1">{children}</div>
         <SiteFooter />
         <GlobalEasterEggs />
+        <PwaRegister />
+        <PwaInstallHint />
       </body>
     </html>
   );

@@ -30,6 +30,27 @@ export const SITE_META = {
   },
 } as const;
 
+/** PWA（添加到主屏幕 / 离线）— 改这里即可更新应用名与主题色 */
+export const PWA = {
+  name: "我俩的时光",
+  shortName: "我俩的时光",
+  description: "记录我和宝子的恋爱时光 — 私人手帐站点",
+  startUrl: "/",
+  scope: "/",
+  themeColor: "#fafafa",
+  backgroundColor: "#fafafa",
+  installDismissKey: "pwa:install-dismissed:v1",
+  installTitle: "装到主屏幕，像 App 一样打开",
+  installAndroidHint: "安装后可以全屏打开，常用页面会缓存在本地。",
+  installIosHint: "点 Safari 底部分享按钮，再选「添加到主屏幕」。",
+  installButton: "安装到主屏幕",
+  installDismiss: "稍后再说",
+  offlineTitle: "暂时没有网络",
+  offlineBody: "已缓存的页面仍可浏览；连上网后刷新即可继续。",
+  offlineAction: "返回首页",
+} as const;
+
+
 /** 顶部导航 */
 export const NAV = {
   brand: "我俩的时光",
