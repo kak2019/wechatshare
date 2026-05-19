@@ -5,7 +5,6 @@ import "./globals.css";
 
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GlobalEasterEggs } from "@/components/site/GlobalEasterEggs";
-import { SITE_META } from "@/content/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,7 +49,7 @@ export default function RootLayout({
           src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"
           strategy="beforeInteractive"
         />
-      </head>
+      </head    >
       <body className="flex min-h-full flex-col font-sans">
         <div className="flex-1">{children}</div>
         <SiteFooter />

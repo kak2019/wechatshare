@@ -40,7 +40,6 @@ export const NAV = {
     { href: "/#playlist", label: "歌单" },
     { href: "/letters", label: "信箱" },
     { href: "/library", label: "影视库" },
-    { href: "/share", label: "分享" },
   ],
   timeMenu: [
     { href: "/#counter", label: "倒数日" },
@@ -58,7 +57,6 @@ export const FOOTER = {
   links: [
     { href: "/letters", label: "信箱" },
     { href: "/library", label: "影视库" },
-    { href: "/share", label: "分享页" },
   ],
   icp: "津ICP备2021004849号-2",
   icpUrl: "https://beian.miit.gov.cn/",

@@ -19,7 +19,6 @@ const MOBILE_HIDDEN_HREFS = new Set([
   "/#story",
   "/#moments",
   "/#playlist",
-  "/share",
 ]);
 
 function isNavActive(pathname: string, href: string) {
