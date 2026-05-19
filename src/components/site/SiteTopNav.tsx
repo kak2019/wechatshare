@@ -48,11 +48,17 @@ export function SiteTopNav() {
         >
           我俩的时光
         </Link>
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:justify-end">
-          <Link href="/#story" className={navClass(pathname === "/")}>
+        <nav className="flex flex-nowrap items-center justify-end gap-x-3 md:flex-wrap md:gap-x-5 md:gap-y-1">
+          <Link
+            href="/#story"
+            className={`hidden md:block ${navClass(pathname === "/")}`}
+          >
             故事
           </Link>
-          <Link href="/#moments" className={navClass(pathname === "/")}>
+          <Link
+            href="/#moments"
+            className={`hidden md:block ${navClass(pathname === "/")}`}
+          >
             瞬间
           </Link>
 
@@ -98,7 +104,10 @@ export function SiteTopNav() {
             </motion.div>
           </div>
 
-          <Link href="/#playlist" className={navClass(pathname === "/")}>
+          <Link
+            href="/#playlist"
+            className={`hidden md:block ${navClass(pathname === "/")}`}
+          >
             歌单
           </Link>
           <Link
@@ -110,7 +119,10 @@ export function SiteTopNav() {
           <Link href="/library" className={navClass(pathname === "/library")}>
             影视库
           </Link>
-          <Link href="/share" className={navClass(pathname === "/share")}>
+          <Link
+            href="/share"
+            className={`hidden md:block ${navClass(pathname === "/share")}`}
+          >
             分享
           </Link>
         </nav>
