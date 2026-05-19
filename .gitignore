@@ -21,7 +21,6 @@ npm-debug.log*
 *.pem
 
 # PWA（构建时生成）
-public/sw.js
 public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
