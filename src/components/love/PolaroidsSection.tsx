@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 
-import { POLAROIDS } from "@/content/site";
+import { HOME, POLAROIDS, UI } from "@/content/site";
 
 function PolaroidCard({
   index,
@@ -79,7 +79,7 @@ function PolaroidCard({
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <p className="font-hand-en text-sm uppercase tracking-[0.3em] text-amber-700/70">
-            note
+            {UI.polaroidNote}
           </p>
           <p className="mt-3 font-hand-zh text-lg leading-relaxed text-[#3a2f2a]">
             {back}
@@ -106,7 +106,7 @@ export function PolaroidsSection() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.8 }}
         >
-          Polaroid Wall
+          {HOME.polaroids.eyebrow}
         </motion.p>
         <motion.h2
           className="mt-5 text-center text-3xl font-semibold tracking-tight sm:text-4xl"
@@ -115,7 +115,7 @@ export function PolaroidsSection() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.9, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
         >
-          摸一摸，翻一翻
+          {HOME.polaroids.heading}
         </motion.h2>
         <motion.p
           className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--mute)] sm:text-base"
@@ -124,7 +124,7 @@ export function PolaroidsSection() {
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.8, delay: 0.1 }}
         >
-          每一张照片背后都偷偷写了字，点一下就能看见 ✿
+          {HOME.polaroids.subtitle}
         </motion.p>
 
         <div className="mt-14 flex flex-wrap items-start justify-center gap-x-2 gap-y-10 sm:gap-x-6 sm:gap-y-14">

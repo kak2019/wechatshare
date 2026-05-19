@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { GlobalEasterEggs } from "@/components/site/GlobalEasterEggs";
+import { SITE_META } from "@/content/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

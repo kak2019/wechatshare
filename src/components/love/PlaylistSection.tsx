@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 
-import { PLAYLIST } from "@/content/site";
+import { HOME, PLAYLIST, UI } from "@/content/site";
 
 export function PlaylistSection() {
   const reduceMotion = useReducedMotion();
@@ -23,7 +23,7 @@ export function PlaylistSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.8 }}
       >
-        Our Playlist
+        {HOME.playlist.eyebrow}
       </motion.p>
       <motion.h2
         className="mt-5 text-center text-3xl font-semibold tracking-tight sm:text-4xl"
@@ -32,7 +32,7 @@ export function PlaylistSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.9, delay: 0.05 }}
       >
-        我们之间，一直循环的几首歌
+        {HOME.playlist.heading}
       </motion.h2>
 
       <div className="mt-14 grid items-center gap-10 md:grid-cols-[1fr_1fr]">
@@ -80,7 +80,7 @@ export function PlaylistSection() {
         <div className="relative">
           <div className="relative h-[140px] overflow-hidden rounded-2xl bg-gradient-to-br from-[#1d1d1f] to-[#3a2f2a] p-6 text-white shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-              now playing
+              {UI.nowPlaying}
             </p>
             <p className="mt-2 text-xl font-semibold">{active.title}</p>
             <p className="text-sm text-white/70">{active.artist}</p>
@@ -136,7 +136,7 @@ export function PlaylistSection() {
                       <p className="text-xs text-[var(--mute)]">{t.artist}</p>
                     </div>
                     {on ? (
-                      <span className="text-xs text-amber-700/70">在放</span>
+                      <span className="text-xs text-amber-700/70">{UI.playing}</span>
                     ) : null}
                   </button>
                 </li>
@@ -145,7 +145,7 @@ export function PlaylistSection() {
           </ul>
 
           <p className="mt-4 text-center text-xs text-[var(--mute)]">
-            * 出于版权考虑，这里只展示歌词氛围；想真的听就一起打开你们的歌单吧 🎧
+            {HOME.playlist.footnote}
           </p>
         </div>
       </div>

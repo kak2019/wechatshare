@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
+import { HOME } from "@/content/site";
 import { useCountdown } from "@/lib/useCountdown";
 
 function FlipDigit({ value }: { value: string }) {
@@ -51,7 +52,7 @@ export function CounterSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       >
-        Day by day, with you
+        {HOME.counter.eyebrow}
       </motion.p>
 
       <motion.h2
@@ -61,7 +62,7 @@ export function CounterSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.9, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
       >
-        我们已经在一起
+        {HOME.counter.heading}
       </motion.h2>
 
       <div
@@ -79,7 +80,7 @@ export function CounterSection() {
           <span className="text-[18vw] sm:text-[160px]">
             <FlipNumber value={days} minDigits={3} />
           </span>
-          <span className="ml-2 text-2xl text-[var(--mute)] sm:text-3xl">天</span>
+          <span className="ml-2 text-2xl text-[var(--mute)] sm:text-3xl">{HOME.counter.units.day}</span>
         </motion.div>
 
         <motion.span
@@ -101,7 +102,10 @@ export function CounterSection() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="pointer-events-none absolute -top-4 right-2 rounded-2xl bg-[#1d1d1f] px-4 py-2 text-xs font-medium text-white shadow-lg sm:right-8"
             >
-              距离「{nextAnniversary.label}」还有 {nextAnniversary.daysLeft} 天 {nextAnniversary.emoji}
+              {HOME.counter.anniversaryTip
+                .replace("{label}", nextAnniversary.label)
+                .replace("{days}", String(nextAnniversary.daysLeft))
+                .replace("{emoji}", nextAnniversary.emoji)}
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -115,17 +119,17 @@ export function CounterSection() {
         transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
       >
         <span className="tabular-nums">
-          <FlipNumber value={hours} /> 时
+          <FlipNumber value={hours} /> {HOME.counter.units.hour}
         </span>
         <span className="tabular-nums">
-          <FlipNumber value={minutes} /> 分
+          <FlipNumber value={minutes} /> {HOME.counter.units.minute}
         </span>
         <span className="tabular-nums">
-          <FlipNumber value={seconds} /> 秒
+          <FlipNumber value={seconds} /> {HOME.counter.units.second}
         </span>
         {nextAnniversary ? (
           <span className="font-hand-en text-base text-amber-700/70">
-            next · {nextAnniversary.label} {nextAnniversary.emoji}
+            {HOME.counter.nextPrefix}{nextAnniversary.label} {nextAnniversary.emoji}
           </span>
         ) : null}
       </motion.div>

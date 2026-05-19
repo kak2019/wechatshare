@@ -3,6 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
+import { EASTER_EGGS } from "@/content/site";
+
 /** 原创简约插画：圆滚滚的「布布系」双人轮廓 + 线条小狗，避免使用官方表情包素材 */
 
 export function CoupleBlobs() {
@@ -87,7 +89,7 @@ export function LineDogOutline() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      aria-label="敲敲线条小狗"
+      aria-label={EASTER_EGGS.lineDogAria}
       role="button"
       tabIndex={0}
       onClick={onClick}
@@ -161,7 +163,7 @@ export function LineDogOutline() {
             exit={{ opacity: 0, y: 8, scale: 0.8 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            汪～你被发现啦 🐾
+            {EASTER_EGGS.lineDogBubble}
           </motion.div>
         ) : null}
       </AnimatePresence>

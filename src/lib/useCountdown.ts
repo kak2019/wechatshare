@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import { ANNIVERSARIES, RELATIONSHIP_START } from "@/content/site";
+import { ANNIVERSARIES, ANNIVERSARY_YEAR_LABEL, RELATIONSHIP_START } from "@/content/site";
 
 export type CountdownState = {
   days: number;
@@ -78,7 +78,7 @@ function pickNextAnniversary(now: Date) {
       : annivThisYear;
   const yearsSince = annivWhen.getFullYear() - start.getFullYear();
   candidates.push({
-    label: `在一起 ${yearsSince} 周年`,
+    label: ANNIVERSARY_YEAR_LABEL.replace("{years}", String(yearsSince)),
     emoji: "💞",
     when: annivWhen,
   });

@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
-import { WISHES } from "@/content/site";
+import { HOME, WISHES, UI } from "@/content/site";
 
 type HeartBurst = {
   id: number;
@@ -86,7 +86,7 @@ export function WishlistSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.8 }}
       >
-        Wishlist for us
+        {HOME.wishlist.eyebrow}
       </motion.p>
       <motion.h2
         className="mt-5 text-center text-3xl font-semibold tracking-tight sm:text-4xl"
@@ -95,22 +95,24 @@ export function WishlistSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.9, delay: 0.05 }}
       >
-        想和你一起做的事
+        {HOME.wishlist.heading}
       </motion.h2>
       <p className="mt-3 text-center text-sm text-[var(--mute)]">
-        已完成 {completed} / {WISHES.length} · 你的勾选会被悄悄记住 💾
+        {HOME.wishlist.progress
+          .replace("{done}", String(completed))
+          .replace("{total}", String(WISHES.length))}
       </p>
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">
         <WishColumn
-          title="一二的小心愿"
+          title={HOME.wishlist.mineColumn}
           accent="from-amber-400 to-orange-500"
           items={mineList}
           checked={checked}
           onToggle={toggle}
         />
         <WishColumn
-          title="布布的小心愿"
+          title={HOME.wishlist.yoursColumn}
           accent="from-rose-400 to-pink-500"
           items={yoursList}
           checked={checked}
@@ -170,7 +172,7 @@ function WishColumn({
       <p
         className={`bg-gradient-to-r ${accent} bg-clip-text text-sm font-semibold uppercase tracking-[0.25em] text-transparent`}
       >
-        list
+        {UI.listEyebrow}
       </p>
       <h3 className="mt-2 text-xl font-semibold">{title}</h3>
 

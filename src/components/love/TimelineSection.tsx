@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useState } from "react";
 
-import { TIMELINE } from "@/content/site";
+import { HOME, TIMELINE } from "@/content/site";
 
 export function TimelineSection() {
   const ref = useRef<HTMLDivElement>(null);
@@ -28,7 +28,7 @@ export function TimelineSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.8 }}
       >
-        Our Timeline
+        {HOME.timeline.eyebrow}
       </motion.p>
       <motion.h2
         className="mt-5 text-center text-3xl font-semibold tracking-tight sm:text-4xl"
@@ -37,10 +37,10 @@ export function TimelineSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.9, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
       >
-        把光阴系成一条
+        {HOME.timeline.heading}
         <span className="bg-gradient-to-r from-amber-500/90 via-orange-500/85 to-rose-500/80 bg-clip-text text-transparent">
           {" "}
-          金色的丝带
+          {HOME.timeline.headingAccent}
         </span>
       </motion.h2>
 

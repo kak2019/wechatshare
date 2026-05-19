@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 
-import { LETTERS, type Letter } from "@/content/site";
+import { LETTERS, LETTERS_PAGE, type Letter } from "@/content/site";
 
 export function LetterboxClient() {
   const reduceMotion = useReducedMotion();
@@ -41,7 +41,7 @@ export function LetterboxClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        Letters between us
+        {LETTERS_PAGE.eyebrow}
       </motion.p>
       <motion.h1
         className="mt-5 text-center text-4xl font-semibold tracking-tight sm:text-5xl"
@@ -49,7 +49,7 @@ export function LetterboxClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, delay: 0.05 }}
       >
-        悄悄话信箱
+        {LETTERS_PAGE.heading}
       </motion.h1>
       <motion.p
         className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-[var(--mute)] sm:text-base"
@@ -57,7 +57,7 @@ export function LetterboxClient() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.15 }}
       >
-        点开任意一封信，可以用 ← → 键翻看下一封 ✉️
+        {LETTERS_PAGE.subtitle}
       </motion.p>
 
       {/* 软木板：信封网格 */}
@@ -126,7 +126,7 @@ export function LetterboxClient() {
               <div className="relative p-8 sm:p-12">
                 <div className="flex items-center justify-between text-xs text-[var(--mute)]">
                   <span className="uppercase tracking-[0.3em]">
-                    {active.from === "me" ? "from 一二" : "from 布布"}
+                    {active.from === "me" ? LETTERS_PAGE.fromMe : LETTERS_PAGE.fromYou}
                   </span>
                   <span>{active.date}</span>
                 </div>
@@ -157,21 +157,21 @@ export function LetterboxClient() {
                   className="rounded-full px-4 py-2 text-[#6e6e73] transition hover:bg-amber-100"
                   onClick={() => goTo(-1)}
                 >
-                  ← 上一封
+                  {LETTERS_PAGE.prev}
                 </button>
                 <button
                   type="button"
                   className="rounded-full bg-[#1d1d1f] px-4 py-2 text-white transition hover:opacity-85"
                   onClick={close}
                 >
-                  收起来
+                  {LETTERS_PAGE.close}
                 </button>
                 <button
                   type="button"
                   className="rounded-full px-4 py-2 text-[#6e6e73] transition hover:bg-amber-100"
                   onClick={() => goTo(1)}
                 >
-                  下一封 →
+                  {LETTERS_PAGE.next}
                 </button>
               </div>
             </motion.div>

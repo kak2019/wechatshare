@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 
 import { LetterboxClient } from "@/components/letters/LetterboxClient";
 import { SiteTopNav } from "@/components/site/SiteTopNav";
+import { SITE_META } from "@/content/site";
 
 export const metadata: Metadata = {
-  title: "悄悄话信箱｜我俩的时光",
-  description: "翻一封信，听一段心里的话。",
+  title: SITE_META.letters.title,
+  description: SITE_META.letters.description,
 };
 
 export default function LettersPage() {

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
+import { NAV } from "@/content/site";
+
 function navClass(active: boolean) {
   return [
     "text-xs font-medium transition-colors hover:text-[var(--foreground)]",
@@ -12,13 +14,38 @@ function navClass(active: boolean) {
   ].join(" ");
 }
 
-const TIME_LINKS: Array<{ href: string; label: string }> = [
-  { href: "/#counter", label: "倒数日" },
-  { href: "/#timeline", label: "时间轴" },
-  { href: "/#polaroids", label: "照片墙" },
-  { href: "/#map", label: "足迹地图" },
-  { href: "/#wishlist", label: "心愿清单" },
-];
+
+const MOBILE_HIDDEN_HREFS = new Set([
+  "/#story",
+  "/#moments",
+  "/#playlist",
+  "/share",
+]);
+
+function isNavActive(pathname: string, href: string) {
+  if (href.startsWith("/#")) return pathname === "/";
+  return pathname === href;
+}
+
+function NavLink({
+  href,
+  label,
+  pathname,
+}: {
+  href: string;
+  label: string;
+  pathname: string;
+}) {
+  const hidden = MOBILE_HIDDEN_HREFS.has(href);
+  return (
+    <Link
+      href={href}
+      className={`${hidden ? "hidden md:block " : ""}${navClass(isNavActive(pathname, href))}`}
+    >
+      {label}
+    </Link>
+  );
+}
 
 export function SiteTopNav() {
   const pathname = usePathname();
@@ -46,23 +73,21 @@ export function SiteTopNav() {
           href="/"
           className="text-sm font-semibold tracking-tight text-[var(--foreground)] transition-opacity hover:opacity-70"
         >
-          我俩的时光
+          {NAV.brand}
         </Link>
         <nav className="flex flex-nowrap items-center justify-end gap-x-3 md:flex-wrap md:gap-x-5 md:gap-y-1">
-          <Link
-            href="/#story"
-            className={`hidden md:block ${navClass(pathname === "/")}`}
-          >
-            故事
-          </Link>
-          <Link
-            href="/#moments"
-            className={`hidden md:block ${navClass(pathname === "/")}`}
-          >
-            瞬间
-          </Link>
+          {(() => {
+            const [story, moments, playlist, ...rest] = NAV.links;
+            return (
+              <>
+                {story ? (
+                  <NavLink href={story.href} label={story.label} pathname={pathname} />
+                ) : null}
+                {moments ? (
+                  <NavLink href={moments.href} label={moments.label} pathname={pathname} />
+                ) : null}
 
-          <div className="relative" ref={wrapRef}>
+                <div className="relative" ref={wrapRef}>
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
@@ -73,7 +98,7 @@ export function SiteTopNav() {
               aria-haspopup="true"
               aria-expanded={open}
             >
-              时光
+              {NAV.timeMenuLabel}
               <span
                 className="text-[8px] transition-transform"
                 style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
@@ -91,7 +116,7 @@ export function SiteTopNav() {
               }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             >
-              {TIME_LINKS.map((l) => (
+              {NAV.timeMenu.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
@@ -104,27 +129,20 @@ export function SiteTopNav() {
             </motion.div>
           </div>
 
-          <Link
-            href="/#playlist"
-            className={`hidden md:block ${navClass(pathname === "/")}`}
-          >
-            歌单
-          </Link>
-          <Link
-            href="/letters"
-            className={navClass(pathname === "/letters")}
-          >
-            信箱
-          </Link>
-          <Link href="/library" className={navClass(pathname === "/library")}>
-            影视库
-          </Link>
-          <Link
-            href="/share"
-            className={`hidden md:block ${navClass(pathname === "/share")}`}
-          >
-            分享
-          </Link>
+                {playlist ? (
+                  <NavLink href={playlist.href} label={playlist.label} pathname={pathname} />
+                ) : null}
+                {rest.map((link) => (
+                  <NavLink
+                    key={link.href}
+                    href={link.href}
+                    label={link.label}
+                    pathname={pathname}
+                  />
+                ))}
+              </>
+            );
+          })()}
         </nav>
       </div>
     </motion.header>
