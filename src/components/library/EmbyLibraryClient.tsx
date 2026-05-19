@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 
 import { SiteTopNav } from "@/components/site/SiteTopNav";
+import { LIBRARY_PAGE } from "@/content/site";
 
 type EmbyLibraryClientProps = {
   embyUrl: string;
@@ -22,16 +23,16 @@ export function EmbyLibraryClient({ embyUrl }: EmbyLibraryClientProps) {
           transition={{ duration: 0.85, ease: easeApple }}
         >
           <p className="text-center text-xs font-medium uppercase tracking-[0.35em] text-[#6e6e73]">
-            Emby · Private Theater
+            {LIBRARY_PAGE.eyebrow}
           </p>
           <h1 className="mt-5 text-center text-4xl font-semibold tracking-tight sm:text-5xl sm:leading-[1.08]">
-            只属于我俩的
+            {LIBRARY_PAGE.heading}
             <span className="block bg-gradient-to-r from-amber-500/90 via-orange-500/85 to-rose-500/80 bg-clip-text text-transparent">
-              放映厅
+              {LIBRARY_PAGE.headingAccent}
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-center text-base leading-relaxed text-[#6e6e73] sm:text-lg">
-            把 Emby 影视库嵌在这个小站里：像手帐里夹一张电影票根——点开就能继续上次没看完的那集。
+            {LIBRARY_PAGE.body}
           </p>
         </motion.div>
 
@@ -43,7 +44,7 @@ export function EmbyLibraryClient({ embyUrl }: EmbyLibraryClientProps) {
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
           <iframe
-            title="Emby 私人影视库"
+            title={LIBRARY_PAGE.iframeTitle}
             src={embyUrl}
             className="block h-[min(76dvh,840px)] w-full border-0 sm:h-[min(80dvh,920px)]"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-read; clipboard-write"
@@ -65,7 +66,7 @@ export function EmbyLibraryClient({ embyUrl }: EmbyLibraryClientProps) {
             rel="noreferrer"
             className="inline-flex items-center justify-center rounded-full border border-black/[0.08] bg-white px-6 py-2.5 text-sm font-medium text-[#1d1d1f] shadow-[0_2px_24px_rgba(0,0,0,0.06)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            新窗口打开 Emby
+            {LIBRARY_PAGE.openExternal}
           </a>
         </motion.div>
       </main>

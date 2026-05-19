@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { EmbyLibraryClient } from "@/components/library/EmbyLibraryClient";
+import { SITE_META } from "@/content/site";
 
 const DEFAULT_EMBY_URL = "http://app.flynt.top:8096";
 

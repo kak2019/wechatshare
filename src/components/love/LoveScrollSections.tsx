@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 
+import { HOME } from "@/content/site";
+
 import { CounterSection } from "./CounterSection";
 import { LineDogOutline } from "./MascotSilhouettes";
 import { MapSection } from "./MapSection";
@@ -9,24 +11,6 @@ import { PlaylistSection } from "./PlaylistSection";
 import { PolaroidsSection } from "./PolaroidsSection";
 import { TimelineSection } from "./TimelineSection";
 import { WishlistSection } from "./WishlistSection";
-
-const moments = [
-  {
-    date: "第一章",
-    title: "相遇像慢镜头",
-    body: "人潮里有你的侧脸，世界忽然安静半秒，然后又热烈起来。",
-  },
-  {
-    date: "第二章",
-    title: "把日常过成节日",
-    body: "一杯奶茶、一场晚风、一个互相懂得的笑话，就是最好的纪念。",
-  },
-  {
-    date: "第三章",
-    title: "写给未来的信",
-    body: "以后的路那么长，我们一页一页慢慢写，不着急，也不缺席。",
-  },
-];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -66,7 +50,7 @@ export function LoveScrollSections() {
             },
           }}
         >
-          A story for us
+          {HOME.story.eyebrow}
         </motion.p>
         <motion.h2
           className="mt-6 text-center text-4xl font-semibold tracking-tight text-[var(--foreground)] sm:text-6xl sm:leading-[1.05]"
@@ -82,9 +66,9 @@ export function LoveScrollSections() {
             },
           }}
         >
-          每一页，
+          {HOME.story.heading}
           <span className="bg-gradient-to-r from-amber-500/90 via-orange-500/85 to-rose-500/80 bg-clip-text text-transparent">
-            都是日常里的光
+            {HOME.story.headingAccent}
           </span>
         </motion.h2>
         <motion.p
@@ -94,7 +78,7 @@ export function LoveScrollSections() {
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.9, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
-          这是属于我和宝子的恋爱手帐：用更慢的节奏、更柔的对比度，把平凡的日子装帧成一本可以反复翻阅的私人出版物。
+          {HOME.story.body}
         </motion.p>
       </section>
 
@@ -104,7 +88,7 @@ export function LoveScrollSections() {
         className="mx-auto max-w-6xl px-6 pb-24 sm:pb-32"
       >
         <div className="grid gap-6 md:grid-cols-3">
-          {moments.map((m, i) => (
+          {HOME.moments.map((m, i) => (
             <motion.article
               key={m.title}
               custom={i}
@@ -154,10 +138,10 @@ export function LoveScrollSections() {
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         >
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/50">
-            今天也想对你说
+            {HOME.closing.eyebrow}
           </p>
           <p className="mt-8 text-2xl font-medium leading-snug tracking-tight text-white/95 sm:text-3xl">
-            &ldquo;谢谢你愿意和我共享这辈子最普通的天气。&rdquo;
+            &ldquo;{HOME.closing.quote}&rdquo;
           </p>
         </motion.div>
 

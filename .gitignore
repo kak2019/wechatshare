@@ -19,3 +19,10 @@ npm-debug.log*
 # misc
 .DS_Store
 *.pem
+
+# PWA（构建时生成）
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/fallback-*.js
+public/swe-worker-*.js

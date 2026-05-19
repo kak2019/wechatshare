@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
-import { PLACES } from "@/content/site";
+import { HOME, PLACES, UI } from "@/content/site";
 
 /**
  * 用一张极度简化的"东亚轮廓"SVG 作为底图，避免依赖外部地图瓦片。
@@ -36,7 +36,7 @@ export function MapSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.8 }}
       >
-        Our Footprints
+        {HOME.map.eyebrow}
       </motion.p>
       <motion.h2
         className="mt-5 text-center text-3xl font-semibold tracking-tight sm:text-4xl"
@@ -45,7 +45,7 @@ export function MapSection() {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.9, delay: 0.05 }}
       >
-        我们一起走过的城
+        {HOME.map.heading}
       </motion.h2>
 
       <div className="relative mt-12 overflow-hidden rounded-[28px] bg-[#fff9eb] p-4 ring-1 ring-amber-200/50 sm:p-8">
@@ -156,7 +156,7 @@ export function MapSection() {
                 type="button"
                 onClick={() => setActive(null)}
                 className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-[#f5f5f7] text-xs text-[#6e6e73] transition hover:bg-[#e5e5ea]"
-                aria-label="关闭"
+                aria-label={UI.close}
               >
                 ×
               </button>
@@ -166,7 +166,7 @@ export function MapSection() {
       </div>
 
       <p className="mt-6 text-center text-sm text-[var(--mute)]">
-        点亮的每一座城，都是一段被认真记住的天气。
+        {HOME.map.footer}
       </p>
     </section>
   );

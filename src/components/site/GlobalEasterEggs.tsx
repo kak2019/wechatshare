@@ -3,6 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 
+import { EASTER_EGGS } from "@/content/site";
+
 type Heart = {
   id: number;
   x: number;
@@ -124,7 +126,7 @@ export function GlobalEasterEggs() {
       <button
         type="button"
         onClick={toggleNight}
-        aria-label={night ? "切换到日间模式" : "切换到夜间模式"}
+        aria-label={night ? EASTER_EGGS.themeDay : EASTER_EGGS.themeNight}
         className="fixed bottom-6 right-6 z-[55] grid h-12 w-12 place-items-center rounded-full text-lg shadow-[0_12px_40px_rgba(0,0,0,0.15)] ring-1 ring-black/[0.06] backdrop-blur-md transition-transform hover:scale-105 active:scale-95"
         style={{
           background: night ? "rgba(29,24,34,0.85)" : "rgba(255,255,255,0.85)",

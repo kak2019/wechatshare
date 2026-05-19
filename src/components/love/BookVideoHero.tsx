@@ -3,6 +3,8 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useCallback, useMemo, useRef, useState } from "react";
 
+import { COUPLE, HOME } from "@/content/site";
+
 import { CoupleBlobs } from "./MascotSilhouettes";
 
 type BookVideoHeroProps = {
@@ -44,7 +46,7 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
       >
-        Our Little Universe
+        {HOME.hero.eyebrow}
       </motion.p>
 
       <div
@@ -75,7 +77,7 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
               />
             ) : (
               <div className="flex h-full min-h-[min(52vh,440px)] w-full flex-col items-center justify-center bg-gradient-to-br from-[#2a2a2c] to-[#111] px-8 text-center">
-                <p className="text-lg font-medium text-white/85">我们的影片，慢慢补齐</p>
+                <p className="text-lg font-medium text-white/85">{HOME.hero.noVideo}</p>
               </div>
             )}
           </div>
@@ -96,7 +98,7 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
             }
             role={open ? undefined : "button"}
             tabIndex={open ? -1 : 0}
-            aria-label={open ? undefined : "翻开书页播放视频"}
+            aria-label={open ? undefined : HOME.hero.openBookAria}
           >
             <motion.div
               className="relative h-full min-h-[min(52vh,440px)] w-1/2 origin-right rounded-l-[26px] border-r border-black/[0.08] bg-gradient-to-br from-[#fff9eb] via-[#fff3d6] to-[#ffe7a8] shadow-[inset_-12px_0_32px_rgba(0,0,0,0.06)]"
@@ -113,19 +115,19 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
             >
               <div className="flex h-full flex-col justify-between p-6 sm:p-9">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8a6a2f]/80">
-                  Vol. 01
+                  {HOME.hero.left.volume}
                 </span>
                 <div>
                   <h2 className="text-balance text-2xl font-semibold tracking-tight text-[#1d1d1f] sm:text-3xl">
-                    恋爱
+                    {HOME.hero.left.title[0]}
                     <br />
-                    手帐
+                    {HOME.hero.left.title[1]}
                   </h2>
                   <p className="mt-3 max-w-[12rem] text-pretty text-sm leading-relaxed text-[#6e6e73]">
-                    点开这一页，让时光自己说话。
+                    {HOME.hero.left.subtitle}
                   </p>
                 </div>
-                <span className="text-xs text-[#ae8a3d]">轻触翻开 →</span>
+                <span className="text-xs text-[#ae8a3d]">{HOME.hero.left.hint}</span>
               </div>
             </motion.div>
 
@@ -144,19 +146,19 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
             >
               <div className="flex h-full flex-col items-end justify-between p-6 text-right sm:p-9">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8a6a2f]/80">
-                  With You
+                  {HOME.hero.right.eyebrow}
                 </span>
                 <div>
                   <p className="text-balance text-2xl font-semibold tracking-tight text-[#1d1d1f] sm:text-3xl">
-                    一二
+                    {COUPLE.me}
                     <br />
-                    与布布
+                    与{COUPLE.you}
                   </p>
                   <p className="mt-3 max-w-[13rem] text-pretty text-sm leading-relaxed text-[#6e6e73]">
-                    线条小狗在页脚跑步，把我们连成一条温柔的线。
+                    {HOME.hero.right.subtitle}
                   </p>
                 </div>
-                <span className="text-xs text-[#ae8a3d]">← 一起翻开</span>
+                <span className="text-xs text-[#ae8a3d]">{HOME.hero.right.hint}</span>
               </div>
             </motion.div>
           </div>
@@ -173,7 +175,7 @@ export function BookVideoHero({ videoSrc, posterSrc }: BookVideoHeroProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          翻开这一章
+          {HOME.hero.cta}
         </motion.button>
       )}
 
