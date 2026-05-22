@@ -64,7 +64,7 @@ export const SCENES: SceneDef[] = [
   },
 ];
 
-/** 图鉴套装 — 集齐增加珍稀概率 */
+/** 图鉴套装 */
 export const CODEX_SETS: CodexSetDef[] = [
   {
     id: "jianghu",
@@ -101,6 +101,30 @@ export const CODEX_SETS: CodexSetDef[] = [
     bonusLabel: "特殊传奇 +10%",
     rareBonus: 0.1,
   },
+  {
+    id: "dragon_balls",
+    name: "七龙珠",
+    fishIds: ["db_1", "db_2", "db_3", "db_4", "db_5", "db_6", "db_7"],
+    bonusLabel: "灵兽全属性 +50/+50/+200",
+    rareBonus: 0.2,
+    statBonus: { atk: 50, def: 50, hp: 200 },
+  },
+  {
+    id: "gems",
+    name: "七彩宝石",
+    fishIds: ["gem_ruby", "gem_sapphire", "gem_emerald", "gem_diamond", "gem_amethyst", "gem_topaz", "gem_opal"],
+    bonusLabel: "灵兽攻防 +30",
+    rareBonus: 0.1,
+    statBonus: { atk: 30, def: 30 },
+  },
+  {
+    id: "couple",
+    name: "一二 & 布布",
+    fishIds: ["yi_er", "bu_bu"],
+    bonusLabel: "灵兽生命 +150 · 奇遇 +5%",
+    rareBonus: 0.05,
+    statBonus: { hp: 150 },
+  },
 ];
 
 /** 四神兽 */
@@ -127,10 +151,91 @@ export const EQUIPMENT: EquipmentDef[] = [
   { id: "immortal_jade", name: "仙灵玉", slot: "accessory", atk: 50, def: 50, hp: 100, rarity: "legendary", ascii: "💎" },
 ];
 
+/** 七龙珠 */
+const DRAGON_BALLS: FishDef[] = [1, 2, 3, 4, 5, 6, 7].map((n) => ({
+  id: `db_${n}`,
+  name: `${n}星龙珠`,
+  ascii: "🔴",
+  rarity: "treasure" as const,
+  category: "treasure" as const,
+  value: 777 * n,
+  setId: "dragon_balls",
+  baseWeight: 2,
+  statBonus: { atk: n * 3, def: n * 2, hp: n * 10 },
+  description: `集齐七颗召唤神龙！当前 ${n}/7`,
+}));
+
+/** 七彩宝石 */
+const GEMS: FishDef[] = [
+  { id: "gem_ruby", name: "红宝石", ascii: "♦️", statBonus: { atk: 8 } },
+  { id: "gem_sapphire", name: "蓝宝石", ascii: "🔷", statBonus: { def: 8 } },
+  { id: "gem_emerald", name: "祖母绿", ascii: "🟩", statBonus: { hp: 25 } },
+  { id: "gem_diamond", name: "钻石", ascii: "💠", statBonus: { atk: 5, def: 5, hp: 15 } },
+  { id: "gem_amethyst", name: "紫水晶", ascii: "🟣", statBonus: { atk: 6, def: 6 } },
+  { id: "gem_topaz", name: "黄玉", ascii: "🟡", statBonus: { def: 10, hp: 10 } },
+  { id: "gem_opal", name: "欧泊", ascii: "🌈", statBonus: { atk: 4, def: 4, hp: 20 } },
+].map((g) => ({
+  ...g,
+  rarity: "treasure" as const,
+  category: "treasure" as const,
+  value: 888,
+  setId: "gems",
+  baseWeight: 4,
+  description: "镶嵌在灵兽身上，永久增加属性。",
+}));
+
+/** 奇遇卡片 */
+const CARDS: FishDef[] = [
+  {
+    id: "card_weather",
+    name: "天气不错卡",
+    ascii: "☀️",
+    rarity: "card",
+    category: "card",
+    value: 0,
+    baseWeight: 3,
+    cardEffect: "weather",
+    description: "使用后全服广播「今天天气不错，适合钓鱼！」，30 分钟内全员稀有度 +10%。",
+  },
+  {
+    id: "card_lucky",
+    name: "幸运星卡",
+    ascii: "⭐",
+    rarity: "card",
+    category: "card",
+    value: 0,
+    baseWeight: 4,
+    cardEffect: "lucky",
+    description: "下次抛竿必触发奇遇事件。",
+  },
+  {
+    id: "card_double",
+    name: "双倍收钩卡",
+    ascii: "🪝",
+    rarity: "card",
+    category: "card",
+    value: 0,
+    baseWeight: 4,
+    cardEffect: "double",
+    description: "下一次钓鱼获得双倍金币。",
+  },
+  {
+    id: "card_blessing",
+    name: "情侣祝福卡",
+    ascii: "💌",
+    rarity: "card",
+    category: "card",
+    value: 0,
+    baseWeight: 3,
+    cardEffect: "blessing",
+    description: "一二 & 布布的祝福：灵兽获得大量经验。",
+  },
+];
+
 /** 所有可钓物品 */
 export const FISH: FishDef[] = [
   // 普通
-  { id: "minnow", name: "小银鱼", ascii: "🐟", rarity: "common", category: "fish", value: 5, baseWeight: 100, setId: undefined },
+  { id: "minnow", name: "小银鱼", ascii: "🐟", rarity: "common", category: "fish", value: 5, baseWeight: 100 },
   { id: "carp", name: "鲤鱼", ascii: "🐠", rarity: "common", category: "fish", value: 12, baseWeight: 80, setId: "jianghu" },
   { id: "grass_carp", name: "草鱼", ascii: "🐡", rarity: "common", category: "fish", value: 15, baseWeight: 75, setId: "jianghu" },
   { id: "crucian", name: "鲫鱼", ascii: "🐟", rarity: "common", category: "fish", value: 10, baseWeight: 85, setId: "jianghu" },
@@ -154,22 +259,41 @@ export const FISH: FishDef[] = [
   { id: "electric_eel", name: "电鳗", ascii: "⚡", rarity: "epic", category: "fish", value: 520, baseWeight: 7, setId: "legend_pool", sceneIds: ["volcano_spring"] },
   { id: "sperm_whale", name: "抹香鲸", ascii: "🐋", rarity: "epic", category: "fish", value: 600, baseWeight: 6, setId: "legend_pool", sceneIds: ["starry_sea"] },
 
-  // 传奇特殊
+  // 传奇
   { id: "tiga", name: "迪迦奥特曼", ascii: "🦸", rarity: "legendary", category: "legendary", value: 5000, baseWeight: 3, setId: "crossover", canRaise: true, description: "来自 M78 的光之巨人！" },
   { id: "pikachu", name: "皮卡丘", ascii: "⚡", rarity: "legendary", category: "legendary", value: 4500, baseWeight: 3, setId: "crossover", canRaise: true, description: "皮卡皮卡～十万伏特！" },
   { id: "nezha", name: "哪吒", ascii: "🔥", rarity: "legendary", category: "legendary", value: 4800, baseWeight: 3, setId: "crossover", canRaise: true, description: "我命由我不由天！" },
-  { id: "wukong", name: "孙悟空", ascii: "🐵", rarity: "legendary", category: "legendary", value: 5500, baseWeight: 2, setId: "crossover", canRaise: true, description: "齐天大圣，一个跟头十万八千里！" },
-  { id: "baize", name: "白泽", ascii: "🦄", rarity: "legendary", category: "legendary", value: 4000, baseWeight: 4, canRaise: true, description: "通晓万物之情的瑞兽。" },
-  { id: "qilin", name: "麒麟", ascii: "🦌", rarity: "legendary", category: "legendary", value: 4200, baseWeight: 4, canRaise: true, description: "仁兽现世，国泰民安。" },
-  { id: "kunpeng", name: "鲲鹏", ascii: "🌊", rarity: "legendary", category: "legendary", value: 6000, baseWeight: 2, canRaise: true, description: "北冥有鱼，其名为鲲。" },
+  { id: "wukong", name: "孙悟空", ascii: "🐵", rarity: "legendary", category: "legendary", value: 5500, baseWeight: 2, setId: "crossover", canRaise: true, description: "齐天大圣！" },
+  { id: "baize", name: "白泽", ascii: "🦄", rarity: "legendary", category: "legendary", value: 4000, baseWeight: 4, canRaise: true },
+  { id: "qilin", name: "麒麟", ascii: "🦌", rarity: "legendary", category: "legendary", value: 4200, baseWeight: 4, canRaise: true },
+  { id: "kunpeng", name: "鲲鹏", ascii: "🌊", rarity: "legendary", category: "legendary", value: 6000, baseWeight: 2, canRaise: true },
 
   // 四神兽
-  { id: "qinglong", name: "青龙", ascii: "🐉", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"], description: "东方之神，主春生万物。" },
-  { id: "baihu", name: "白虎", ascii: "🐯", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"], description: "西方之神，主秋杀肃降。" },
-  { id: "zhuque", name: "朱雀", ascii: "🔥", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"], description: "南方之神，主夏火炎上。" },
-  { id: "xuanwu", name: "玄武", ascii: "🐢", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"], description: "北方之神，主冬水润下。" },
+  { id: "qinglong", name: "青龙", ascii: "🐉", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
+  { id: "baihu", name: "白虎", ascii: "🐯", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
+  { id: "zhuque", name: "朱雀", ascii: "🔥", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
+  { id: "xuanwu", name: "玄武", ascii: "🐢", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
 
-  // 装备（钓鱼获得，自动穿戴）
+  // 奇遇奇物 — 越奇妙越好
+  { id: "yi_er", name: "一二", ascii: "🧑", rarity: "legendary", category: "treasure", value: 1314, baseWeight: 2, setId: "couple", statBonus: { atk: 20, hp: 80 }, description: "哎呀！钓上来一个人！一二说：「今天也要开心钓鱼哦～」" },
+  { id: "bu_bu", name: "布布", ascii: "👧", rarity: "legendary", category: "treasure", value: 1314, baseWeight: 2, setId: "couple", statBonus: { def: 20, hp: 80 }, description: "布布浮在水面：「宝子你钓到我啦！今晚加菜！」" },
+  ...DRAGON_BALLS,
+  ...GEMS,
+  ...CARDS,
+
+  // 整蛊奇遇
+  { id: "old_boot", name: "陈年臭靴子", ascii: "👢", rarity: "common", category: "encounter", value: 1, baseWeight: 12, description: "…谁把靴子扔水里的？" },
+  { id: "message_bottle", name: "漂流瓶", ascii: "🍾", rarity: "uncommon", category: "encounter", value: 50, baseWeight: 8, description: "瓶中信：「灵渊深处有龙。」" },
+  { id: "ufo", name: "微型 UFO", ascii: "🛸", rarity: "epic", category: "encounter", value: 2000, baseWeight: 2, description: "外星文明：「地球钓鱼技术令人震撼。」" },
+  { id: "treasure_chest", name: "沉没宝箱", ascii: "🎁", rarity: "rare", category: "encounter", value: 500, baseWeight: 6, description: "开箱：金币叮当响！" },
+  { id: "golden_lotus", name: "金莲花", ascii: "🪷", rarity: "epic", category: "treasure", value: 1688, baseWeight: 3, statBonus: { atk: 15, def: 15, hp: 40 }, description: "佛缘降临，灵兽心境通透。" },
+  { id: "phoenix_feather", name: "凤凰羽毛", ascii: "🪶", rarity: "legendary", category: "treasure", value: 3333, baseWeight: 2, statBonus: { atk: 25, hp: 60 }, description: "浴火重生之力附着其上。" },
+  { id: "dragon_scale", name: "龙鳞", ascii: "🐲", rarity: "legendary", category: "treasure", value: 4000, baseWeight: 2, statBonus: { def: 35, hp: 50 }, description: "一片鳞，千斤重。" },
+  { id: "time_fish", name: "时之鱼", ascii: "⏳", rarity: "legendary", category: "encounter", value: 3000, baseWeight: 2, description: "它游过的地方，时间慢了一秒。" },
+  { id: "quantum_shrimp", name: "量子小虾", ascii: "🦐", rarity: "epic", category: "encounter", value: 999, baseWeight: 3, description: "同时存在于收竿前与收竿后。" },
+  { id: "singing_whale", name: "唱歌的鲸鱼", ascii: "🎵", rarity: "rare", category: "encounter", value: 300, baseWeight: 5, description: "它唱：「～～～今天天气不错～～～」" },
+
+  // 装备
   ...EQUIPMENT.map((eq) => ({
     id: eq.id,
     name: eq.name,
@@ -184,21 +308,22 @@ export const FISH: FishDef[] = [
 export const FISH_PAGE = {
   eyebrow: "Little game for us",
   heading: "灵渊钓奇",
-  subtitle: "在晨曦与星辉之间，钓起江湖水族、上古神兽，甚至迪迦与皮卡丘。集齐图鉴、养成灵兽、勇闯通天塔！",
+  subtitle: "钓江湖水族、上古神兽、七龙珠与宝石；一二布布也会上钩！集图鉴、养神兽、闯通天塔、争排行榜。",
   castButton: "抛竿！",
   waitingButton: "等待咬钩…",
   reelButton: "收竿！",
   sellAll: "一键出售普通鱼",
   rodUpgrade: "升级鱼竿",
-  playerNamePlaceholder: "输入渔夫名号",
-  saveNote: "进度保存在本机浏览器，换设备需导出存档。",
-  multiplayerNote: "当前为单机本地存档；若要多人同服，需接入后端数据库（未来可扩展）。",
+  playerNamePlaceholder: "输入你的渔夫名（排行榜用）",
+  saveNote: "游戏进度保存在本机；排行榜与全服事件同步到服务器。",
+  multiplayerNote: "输入名字后自动上传排行榜。钓到神兽/使用天气不错卡会全服广播！",
   tabs: {
     fish: "钓鱼",
     codex: "图鉴",
     shop: "商店",
     bag: "背包",
     tower: "通天塔",
+    rank: "排行榜",
   },
 } as const;
 
@@ -210,4 +335,6 @@ export const RARITY_LABELS: Record<string, { label: string; color: string }> = {
   legendary: { label: "传奇", color: "text-orange-500" },
   mythical: { label: "神兽", color: "text-red-600" },
   equipment: { label: "装备", color: "text-cyan-600" },
+  treasure: { label: "宝物", color: "text-amber-600" },
+  card: { label: "卡片", color: "text-pink-600" },
 };

@@ -1,6 +1,28 @@
-export type FishRarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "mythical" | "equipment";
+export type FishRarity =
+  | "common"
+  | "uncommon"
+  | "rare"
+  | "epic"
+  | "legendary"
+  | "mythical"
+  | "equipment"
+  | "treasure"
+  | "card";
 
-export type FishCategory = "fish" | "beast" | "legendary" | "equipment";
+export type FishCategory =
+  | "fish"
+  | "beast"
+  | "legendary"
+  | "equipment"
+  | "treasure"
+  | "card"
+  | "encounter";
+
+export interface StatBonus {
+  atk?: number;
+  def?: number;
+  hp?: number;
+}
 
 export interface FishDef {
   id: string;
@@ -14,6 +36,9 @@ export interface FishDef {
   baseWeight: number;
   canRaise?: boolean;
   description?: string;
+  statBonus?: StatBonus;
+  /** 卡片效果 id */
+  cardEffect?: string;
 }
 
 export interface EquipmentDef {
@@ -44,6 +69,18 @@ export interface CodexSetDef {
   fishIds: string[];
   bonusLabel: string;
   rareBonus: number;
+  statBonus?: StatBonus;
+}
+
+export interface EncounterDef {
+  id: string;
+  name: string;
+  ascii: string;
+  message: string;
+  /** 接下来 N 次抛竿的稀有度加成 */
+  catchBonus?: number;
+  duration?: number;
+  goldBonus?: number;
 }
 
 export interface BeastDef {
@@ -72,6 +109,7 @@ export interface BeastInstance {
 
 export interface GameSave {
   version: number;
+  playerId: string;
   playerName: string;
   gold: number;
   rodLevel: number;
@@ -83,6 +121,12 @@ export interface GameSave {
   towerFloor: number;
   totalCatches: number;
   totalSold: number;
+  treasures: Record<string, number>;
+  dragonBalls: number[];
+  cards: Record<string, number>;
+  permanentBonus: StatBonus;
+  activeEncounter: { id: string; remaining: number } | null;
+  streak: number;
   createdAt: number;
   lastSaved: number;
 }
@@ -92,6 +136,7 @@ export interface CatchResult {
   isNew: boolean;
   leveledBeast?: BeastInstance;
   autoEquipped?: EquipmentDef;
+  encounter?: EncounterDef;
   message: string;
 }
 
@@ -104,4 +149,30 @@ export interface TowerBattleResult {
   beastHpLeft: number;
 }
 
-export type GameTab = "fish" | "codex" | "shop" | "bag" | "tower";
+export interface LeaderboardEntry {
+  playerId: string;
+  playerName: string;
+  totalGold: number;
+  towerFloor: number;
+  totalCatches: number;
+  mythicalCount: number;
+  rodLevel: number;
+  updatedAt: number;
+}
+
+export interface GlobalEvent {
+  id: string;
+  type: "catch" | "weather" | "encounter" | "dragon";
+  playerName: string;
+  message: string;
+  createdAt: number;
+  expiresAt?: number;
+}
+
+export interface GlobalState {
+  events: GlobalEvent[];
+  weatherBuffUntil: number;
+  weatherBuffBy: string;
+}
+
+export type GameTab = "fish" | "codex" | "shop" | "bag" | "tower" | "rank";

@@ -26,3 +26,6 @@ public/workbox-*.js
 public/workbox-*.js.map
 public/fallback-*.js
 public/swe-worker-*.js
+
+# 钓鱼游戏服务端数据（运行时生成）
+/data/fish/*.json
