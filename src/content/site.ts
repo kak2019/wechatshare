@@ -28,6 +28,10 @@ export const SITE_META = {
     title: "放映厅｜我俩的时光",
     description: "和喜欢的人一起打开 Emby 私人影视库。",
   },
+  fish: {
+    title: "灵渊钓奇｜我俩的时光",
+    description: "钓鱼、集图鉴、养神兽、闯通天塔 — 本地存档小游戏。",
+  },
 } as const;
 
 /** PWA（添加到主屏幕 / 离线）— 改这里即可更新应用名与主题色 */
@@ -61,6 +65,7 @@ export const NAV = {
     { href: "/#playlist", label: "歌单" },
     { href: "/letters", label: "信箱" },
     { href: "/library", label: "影视库" },
+    { href: "/fish", label: "钓鱼" },
   ],
   timeMenu: [
     { href: "/#counter", label: "倒数日" },
@@ -78,6 +83,7 @@ export const FOOTER = {
   links: [
     { href: "/letters", label: "信箱" },
     { href: "/library", label: "影视库" },
+    { href: "/fish", label: "钓鱼" },
   ],
   icp: "津ICP备2021004849号-2",
   icpUrl: "https://beian.miit.gov.cn/",
