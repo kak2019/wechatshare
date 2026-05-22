@@ -3,14 +3,17 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { GlobalTicker } from "@/components/fish/GlobalTicker";
+import { LeaderboardPanel } from "@/components/fish/LeaderboardPanel";
+import { CODEX_SETS, FISH, FISH_PAGE, RARITY_LABELS, SCENES } from "@/content/fish";
 import {
-  CODEX_SETS,
-  FISH,
-  FISH_PAGE,
-  RARITY_LABELS,
-  SCENES,
-} from "@/content/fish";
+  broadcastCatch,
+  fetchGlobalEvents,
+  syncLeaderboard,
+  useWeatherCard,
+} from "@/lib/fish/api";
 import {
+  applyEncounter,
   exportSave,
   getCatchRateDisplay,
   getCompletedSets,
@@ -18,16 +21,19 @@ import {
   getEquipmentById,
   getUnitStats,
   importSave,
+  maybeTriggerEncounter,
   processCatch,
   rollCatch,
   rodUpgradeCost,
   runTowerBattle,
   sellAllCommon,
   sellFish,
+  shouldBroadcastCatch,
   upgradeRod,
+  useCard,
 } from "@/lib/fish/engine";
 import { loadSave, persistSave } from "@/lib/fish/storage";
-import type { CatchResult, GameSave, GameTab, TowerBattleResult } from "@/lib/fish/types";
+import type { CatchResult, GameSave, GameTab, GlobalEvent, TowerBattleResult } from "@/lib/fish/types";
 
 type FishPhase = "idle" | "casting" | "waiting" | "bite" | "reeling" | "caught";
 
@@ -37,6 +43,7 @@ const TABS: { id: GameTab; label: string }[] = [
   { id: "shop", label: FISH_PAGE.tabs.shop },
   { id: "bag", label: FISH_PAGE.tabs.bag },
   { id: "tower", label: FISH_PAGE.tabs.tower },
+  { id: "rank", label: FISH_PAGE.tabs.rank },
 ];
 
 function formatGold(n: number) {
@@ -48,24 +55,45 @@ export function FishingGameClient() {
   const [save, setSave] = useState<GameSave | null>(null);
   const [tab, setTab] = useState<GameTab>("fish");
   const [phase, setPhase] = useState<FishPhase>("idle");
-  const [logs, setLogs] = useState<string[]>(["欢迎来到灵渊钓奇！抛竿开始你的传说。"]);
+  const [logs, setLogs] = useState<string[]>(["欢迎来到灵渊钓奇！输入名字后可上排行榜。"]);
   const [lastCatch, setLastCatch] = useState<CatchResult | null>(null);
   const [towerResult, setTowerResult] = useState<TowerBattleResult | null>(null);
   const [showExport, setShowExport] = useState(false);
+  const [globalEvents, setGlobalEvents] = useState<GlobalEvent[]>([]);
+  const [weatherActive, setWeatherActive] = useState(false);
+  const [weatherBuffBy, setWeatherBuffBy] = useState("");
   const waitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const biteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingEncounter = useRef<ReturnType<typeof maybeTriggerEncounter>>(null);
 
   useEffect(() => {
     setTimeout(() => setSave(loadSave()), 0);
   }, []);
 
+  const refreshEvents = useCallback(async () => {
+    const data = await fetchGlobalEvents();
+    if (!data) return;
+    setGlobalEvents(data.events);
+    setWeatherActive(data.weatherActive);
+    setWeatherBuffBy(data.weatherBuffBy);
+  }, []);
+
+  useEffect(() => {
+    refreshEvents();
+    const t = setInterval(refreshEvents, 20000);
+    return () => clearInterval(t);
+  }, [refreshEvents]);
+
   const updateSave = useCallback((next: GameSave) => {
     setSave(next);
     persistSave(next);
+    if (next.playerName.trim()) {
+      syncLeaderboard(next).catch(() => {});
+    }
   }, []);
 
   const addLog = useCallback((msg: string) => {
-    setLogs((prev) => [msg, ...prev].slice(0, 50));
+    setLogs((prev) => [msg, ...prev].slice(0, 60));
   }, []);
 
   const clearTimers = useCallback(() => {
@@ -77,26 +105,37 @@ export function FishingGameClient() {
 
   const cast = () => {
     if (!save || phase !== "idle") return;
+    if (!save.playerName.trim()) {
+      addLog("⚠️ 请先输入渔夫名字，才能上排行榜和全服广播！");
+    }
     clearTimers();
     setPhase("casting");
     setLastCatch(null);
-    addLog("🎣 鱼线划出优美的弧线…");
+
+    const enc = maybeTriggerEncounter(save);
+    pendingEncounter.current = enc;
+    let working = save;
+    if (enc) {
+      working = applyEncounter(save, enc);
+      updateSave(working);
+      addLog(`${enc.ascii} 奇遇：${enc.name}！${enc.message}`);
+    } else {
+      addLog("🎣 鱼线划出优美的弧线…");
+    }
 
     const castDelay = reduced ? 300 : 800;
     waitTimer.current = setTimeout(() => {
       setPhase("waiting");
-      addLog("⏳ 浮漂轻轻晃动，耐心等待…");
-
+      if (!enc) addLog("⏳ 浮漂轻轻晃动…");
       const waitMs = reduced ? 600 : 1500 + Math.random() * 2500;
       waitTimer.current = setTimeout(() => {
         setPhase("bite");
         addLog("❗ 咬钩了！快收竿！");
-
-        const biteWindow = reduced ? 3000 : 2000;
         biteTimer.current = setTimeout(() => {
           setPhase("idle");
-          addLog("💨 鱼跑了…反应太慢啦！");
-        }, biteWindow);
+          pendingEncounter.current = null;
+          addLog("💨 鱼跑了…");
+        }, reduced ? 3000 : 2000);
       }, waitMs);
     }, castDelay);
   };
@@ -105,17 +144,52 @@ export function FishingGameClient() {
     if (!save || phase !== "bite") return;
     clearTimers();
     setPhase("reeling");
+    const enc = pendingEncounter.current ?? undefined;
+    pendingEncounter.current = null;
 
-    setTimeout(() => {
-      const fish = rollCatch(save);
-      const { save: next, result } = processCatch(save, fish);
+    setTimeout(async () => {
+      const fish = rollCatch(save, { weatherBuff: weatherActive });
+      let { save: next, result } = processCatch(save, fish, enc ?? undefined);
+
+      if (save.activeEncounter?.id === "double_gold" || next.activeEncounter?.id === "double_gold") {
+        next = { ...next, gold: next.gold + fish.value };
+        result = { ...result, message: result.message + " （双倍金币！）" };
+      }
+
       updateSave(next);
       setLastCatch(result);
       addLog(result.message);
       setPhase("caught");
 
+      if (shouldBroadcastCatch(fish) && next.playerName.trim()) {
+        const msg = `${next.playerName} 钓到了 ${fish.ascii}${fish.name}！`;
+        broadcastCatch(next.playerName, msg, fish.id.startsWith("db_") ? "dragon" : "catch");
+        refreshEvents();
+      }
+
       setTimeout(() => setPhase("idle"), reduced ? 500 : 1800);
     }, reduced ? 200 : 600);
+  };
+
+  const handleUseCard = async (cardId: string) => {
+    if (!save) return;
+    const res = useCard(save, cardId);
+    if (!res) {
+      addLog("❌ 没有这张卡片");
+      return;
+    }
+    updateSave(res.save);
+    if (res.effect === "weather_broadcast") {
+      if (!save.playerName.trim()) {
+        addLog("⚠️ 需要名字才能全服广播天气不错！");
+        return;
+      }
+      await useWeatherCard(save.playerName);
+      addLog("☀️ 天气不错卡已使用！全服 30 分钟稀有度 +10%！");
+      refreshEvents();
+    } else {
+      addLog(`🃏 ${res.effect}`);
+    }
   };
 
   const handleSell = (uid: string) => {
@@ -123,15 +197,14 @@ export function FishingGameClient() {
     const item = save.inventory.find((i) => i.uid === uid);
     const fish = item ? getFishById(item.fishId) : null;
     updateSave(sellFish(save, uid));
-    if (fish) addLog(`💰 出售 ${fish.name}，获得 ${fish.value} 金`);
+    if (fish) addLog(`💰 出售 ${fish.name}，+${fish.value} 金`);
   };
 
   const handleSellAll = () => {
     if (!save) return;
-    const before = save.gold;
     const next = sellAllCommon(save);
+    addLog(`💰 批量出售 +${next.gold - save.gold} 金`);
     updateSave(next);
-    addLog(`💰 批量出售普通鱼，获得 ${next.gold - before} 金`);
   };
 
   const handleUpgrade = () => {
@@ -139,23 +212,17 @@ export function FishingGameClient() {
     const cost = rodUpgradeCost(save.rodLevel);
     const next = upgradeRod(save);
     if (!next) {
-      addLog(`❌ 金币不足！升级需要 ${formatGold(cost)} 金`);
+      addLog(`❌ 需要 ${formatGold(cost)} 金`);
       return;
     }
     updateSave(next);
-    addLog(`🔧 鱼竿升级至 Lv.${next.rodLevel}！稀有鱼概率提升！`);
+    addLog(`🔧 鱼竿 Lv.${next.rodLevel}！`);
   };
 
   const handleTower = () => {
-    if (!save || !save.selectedBeastId) {
-      addLog("❌ 请先选择一只 Lv.3+ 的灵兽！");
-      return;
-    }
+    if (!save?.selectedBeastId) return addLog("❌ 请选择 Lv.3+ 灵兽");
     const beast = save.beasts.find((b) => b.uid === save.selectedBeastId);
-    if (!beast || beast.level < 3) {
-      addLog("❌ 灵兽至少 Lv.3 才能闯通天塔！多钓同类来升级。");
-      return;
-    }
+    if (!beast || beast.level < 3) return addLog("❌ 灵兽需 Lv.3+");
     const result = runTowerBattle(save, save.selectedBeastId);
     if (!result) return;
     updateSave(result.save);
@@ -164,362 +231,135 @@ export function FishingGameClient() {
   };
 
   if (!save) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center text-sm text-[var(--mute)]">
-        加载存档中…
-      </div>
-    );
+    return <div className="flex min-h-[60vh] items-center justify-center text-sm text-[var(--mute)]">加载中…</div>;
   }
 
   const scene = SCENES.find((s) => s.id === save.currentScene) ?? SCENES[0];
   const selectedBeast = save.beasts.find((b) => b.uid === save.selectedBeastId);
-  const upgradeCost = rodUpgradeCost(save.rodLevel);
   const completedSets = getCompletedSets(save.codex);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-      {/* Header */}
       <div className="mb-6 text-center">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--mute)]">{FISH_PAGE.eyebrow}</p>
         <h1 className="mt-2 font-hand-zh text-4xl font-bold md:text-5xl">
-          <span className="bg-gradient-to-r from-blue-600 via-teal-500 to-emerald-500 bg-clip-text text-transparent">
-            {FISH_PAGE.heading}
-          </span>
+          <span className="bg-gradient-to-r from-blue-600 via-teal-500 to-emerald-500 bg-clip-text text-transparent">{FISH_PAGE.heading}</span>
         </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[var(--mute)]">{FISH_PAGE.subtitle}</p>
+        <p className="mx-auto mt-3 max-w-2xl text-sm text-[var(--mute)]">{FISH_PAGE.subtitle}</p>
       </div>
 
-      {/* Status bar */}
+      <GlobalTicker events={globalEvents} weatherActive={weatherActive} weatherBuffBy={weatherBuffBy} />
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/80 px-4 py-3 shadow-sm ring-1 ring-black/[0.05]">
         <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span>
-            👤{" "}
-            <input
-              className="w-24 border-b border-dashed border-gray-300 bg-transparent outline-none focus:border-teal-400"
-              value={save.playerName}
-              onChange={(e) => updateSave({ ...save, playerName: e.target.value })}
-              placeholder={FISH_PAGE.playerNamePlaceholder}
-            />
-          </span>
+          <span>👤 <input className="w-28 border-b border-dashed border-gray-300 bg-transparent outline-none focus:border-teal-400" value={save.playerName} onChange={(e) => updateSave({ ...save, playerName: e.target.value })} placeholder={FISH_PAGE.playerNamePlaceholder} /></span>
           <span className="font-semibold text-amber-600">💰 {formatGold(save.gold)}</span>
           <span className="text-[var(--mute)]">🎣 Lv.{save.rodLevel}</span>
-          <span className="text-[var(--mute)]">📦 {save.inventory.length}</span>
-          <span className="text-[var(--mute)]">🏯 塔 {save.towerFloor} 层</span>
+          <span className="text-[var(--mute)]">🏯 {save.towerFloor}层</span>
+          {save.dragonBalls.length > 0 && <span className="text-red-500">🔴 {save.dragonBalls.length}/7</span>}
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowExport(!showExport)}
-            className="rounded-xl px-3 py-1.5 text-xs text-[var(--mute)] ring-1 ring-black/[0.08] hover:bg-gray-50"
-          >
-            存档
-          </button>
-        </div>
+        <button type="button" onClick={() => setShowExport(!showExport)} className="rounded-xl px-3 py-1.5 text-xs ring-1 ring-black/[0.08]">存档</button>
       </div>
 
       {showExport && (
         <div className="mb-4 rounded-2xl bg-amber-50/80 p-4 text-xs text-[var(--mute)] ring-1 ring-amber-200">
-          <p className="mb-2">{FISH_PAGE.saveNote}</p>
-          <p className="mb-3">{FISH_PAGE.multiplayerNote}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded-lg bg-white px-3 py-1.5 ring-1 ring-black/[0.08] hover:bg-gray-50"
-              onClick={() => {
-                void navigator.clipboard.writeText(exportSave(save));
-                addLog("📋 存档已复制到剪贴板");
-              }}
-            >
-              导出存档
-            </button>
-            <button
-              type="button"
-              className="rounded-lg bg-white px-3 py-1.5 ring-1 ring-black/[0.08] hover:bg-gray-50"
-              onClick={() => {
-                const raw = prompt("粘贴存档 JSON：");
-                if (!raw) return;
-                const imported = importSave(raw);
-                if (imported) {
-                  updateSave(imported);
-                  addLog("✅ 存档导入成功！");
-                } else {
-                  addLog("❌ 存档格式无效");
-                }
-              }}
-            >
-              导入存档
-            </button>
+          <p>{FISH_PAGE.saveNote}</p>
+          <p className="mt-1">{FISH_PAGE.multiplayerNote}</p>
+          <div className="mt-2 flex gap-2">
+            <button type="button" className="rounded-lg bg-white px-3 py-1.5 ring-1 ring-black/[0.08]" onClick={() => { void navigator.clipboard.writeText(exportSave(save)); addLog("📋 已复制存档"); }}>导出</button>
+            <button type="button" className="rounded-lg bg-white px-3 py-1.5 ring-1 ring-black/[0.08]" onClick={() => { const raw = prompt("粘贴存档 JSON"); if (!raw) return; const imp = importSave(raw); if (imp) { updateSave(imp); addLog("✅ 导入成功"); } else addLog("❌ 格式错误"); }}>导入</button>
           </div>
         </div>
       )}
 
-      {/* Tabs */}
       <div className="mb-4 flex flex-wrap gap-2">
         {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={[
-              "rounded-full px-4 py-2 text-sm font-medium transition-all",
-              tab === t.id
-                ? "bg-teal-600 text-white shadow-md"
-                : "bg-white text-[var(--mute)] ring-1 ring-black/[0.08] hover:text-[var(--foreground)]",
-            ].join(" ")}
-          >
-            {t.label}
-          </button>
+          <button key={t.id} type="button" onClick={() => setTab(t.id)} className={["rounded-full px-4 py-2 text-sm font-medium", tab === t.id ? "bg-teal-600 text-white shadow-md" : "bg-white text-[var(--mute)] ring-1 ring-black/[0.08]"].join(" ")}>{t.label}</button>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        {/* Main panel */}
         <div className="min-w-0">
-          {tab === "fish" && (
-            <FishingPanel
-              save={save}
-              scene={scene}
-              phase={phase}
-              lastCatch={lastCatch}
-              onCast={cast}
-              onReel={reel}
-              onSceneChange={(id) => updateSave({ ...save, currentScene: id })}
-              catchRate={getCatchRateDisplay(save)}
-            />
-          )}
-          {tab === "codex" && <CodexPanel codex={save.codex} completedSets={completedSets} />}
-          {tab === "shop" && (
-            <ShopPanel
-              gold={save.gold}
-              rodLevel={save.rodLevel}
-              upgradeCost={upgradeCost}
-              onUpgrade={handleUpgrade}
-            />
-          )}
-          {tab === "bag" && (
-            <BagPanel inventory={save.inventory} onSell={handleSell} onSellAll={handleSellAll} />
-          )}
-          {tab === "tower" && (
-            <TowerPanel
-              towerFloor={save.towerFloor}
-              selectedBeast={selectedBeast}
-              towerResult={towerResult}
-              onChallenge={handleTower}
-            />
-          )}
-
-          {/* Log */}
-          <div className="mt-4 max-h-40 overflow-y-auto rounded-2xl bg-[#1a1a2e] p-4 font-mono text-xs leading-relaxed text-green-300">
-            {logs.map((log, i) => (
-              <div key={`${i}-${log.slice(0, 12)}`} className={i === 0 ? "text-green-200" : "text-green-400/70"}>
-                {log}
-              </div>
-            ))}
+          {tab === "fish" && <FishingPanel save={save} scene={scene} phase={phase} lastCatch={lastCatch} onCast={cast} onReel={reel} onSceneChange={(id) => updateSave({ ...save, currentScene: id })} catchRate={getCatchRateDisplay(save, weatherActive)} />}
+          {tab === "codex" && <CodexPanel codex={save.codex} completedSets={completedSets} dragonBalls={save.dragonBalls} />}
+          {tab === "shop" && <ShopPanel gold={save.gold} rodLevel={save.rodLevel} upgradeCost={rodUpgradeCost(save.rodLevel)} onUpgrade={handleUpgrade} />}
+          {tab === "bag" && <BagPanel inventory={save.inventory} cards={save.cards} onSell={handleSell} onSellAll={handleSellAll} onUseCard={handleUseCard} />}
+          {tab === "tower" && <TowerPanel towerFloor={save.towerFloor} selectedBeast={selectedBeast} permanentBonus={save.permanentBonus} towerResult={towerResult} onChallenge={handleTower} />}
+          {tab === "rank" && <LeaderboardPanel currentPlayerId={save.playerId} />}
+          <div className="mt-4 max-h-44 overflow-y-auto rounded-2xl bg-[#1a1a2e] p-4 font-mono text-xs text-green-300">
+            {logs.map((log, i) => <div key={`${i}-${log.slice(0,8)}`} className={i === 0 ? "text-green-200" : "text-green-400/70"}>{log}</div>)}
           </div>
         </div>
-
-        {/* Beast sidebar */}
-        <BeastPanel
-          beasts={save.beasts}
-          selectedId={save.selectedBeastId}
-          onSelect={(uid) => updateSave({ ...save, selectedBeastId: uid })}
-        />
+        <BeastPanel beasts={save.beasts} selectedId={save.selectedBeastId} permanentBonus={save.permanentBonus} onSelect={(uid) => updateSave({ ...save, selectedBeastId: uid })} />
       </div>
     </div>
   );
 }
 
-function FishingPanel({
-  save,
-  scene,
-  phase,
-  lastCatch,
-  onCast,
-  onReel,
-  onSceneChange,
-  catchRate,
-}: {
-  save: GameSave;
-  scene: (typeof SCENES)[0];
-  phase: FishPhase;
-  lastCatch: CatchResult | null;
-  onCast: () => void;
-  onReel: () => void;
-  onSceneChange: (id: string) => void;
-  catchRate: string;
-}) {
+function FishingPanel({ save, scene, phase, lastCatch, onCast, onReel, onSceneChange, catchRate }: { save: GameSave; scene: (typeof SCENES)[0]; phase: FishPhase; lastCatch: CatchResult | null; onCast: () => void; onReel: () => void; onSceneChange: (id: string) => void; catchRate: string }) {
   const isDark = scene.id === "starry_sea" || scene.id === "cloud_palace";
-
   return (
-    <div className="overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.1)] ring-1 ring-black/[0.06]">
-      {/* Scene selector */}
+    <div className="overflow-hidden rounded-[28px] shadow-lg ring-1 ring-black/[0.06]">
       <div className="flex gap-2 overflow-x-auto bg-white/90 p-3">
         {SCENES.map((s) => {
           const locked = save.rodLevel < s.unlockRodLevel;
           return (
-            <button
-              key={s.id}
-              type="button"
-              disabled={locked}
-              onClick={() => onSceneChange(s.id)}
-              className={[
-                "shrink-0 rounded-xl px-3 py-2 text-xs transition-all",
-                save.currentScene === s.id
-                  ? "bg-teal-100 font-semibold text-teal-800 ring-2 ring-teal-400"
-                  : locked
-                    ? "cursor-not-allowed bg-gray-100 text-gray-400"
-                    : "bg-gray-50 text-[var(--mute)] hover:bg-gray-100",
-              ].join(" ")}
-            >
-              {s.emoji} {s.name}
-              {locked ? ` 🔒Lv${s.unlockRodLevel}` : ""}
+            <button key={s.id} type="button" disabled={locked} onClick={() => onSceneChange(s.id)} className={["shrink-0 rounded-xl px-3 py-2 text-xs", save.currentScene === s.id ? "bg-teal-100 font-semibold ring-2 ring-teal-400" : locked ? "bg-gray-100 text-gray-400" : "bg-gray-50 hover:bg-gray-100"].join(" ")}>
+              {s.emoji} {s.name}{locked ? ` 🔒${s.unlockRodLevel}` : ""}
             </button>
           );
         })}
       </div>
-
-      {/* Water scene ASCII art */}
-      <div className={`relative bg-gradient-to-b ${scene.bgClass} p-6 ${isDark ? "text-white" : "text-gray-800"}`}>
+      <div className={`bg-gradient-to-b ${scene.bgClass} p-6 ${isDark ? "text-white" : "text-gray-800"}`}>
         <p className="text-center text-xs opacity-70">{scene.description}</p>
-
-        <pre className="my-4 select-none text-center font-mono text-[10px] leading-tight opacity-60 md:text-xs">
-{`        ${scene.emoji}  ${scene.name}  ${scene.emoji}
-    ☁️                    ☁️
-         ┌───┐
-         │ ${phase === "waiting" ? "..." : phase === "bite" ? "!!" : "～"} │
-         └─┬─┘
-           │ ${phase === "casting" ? "／" : "│"}
-    ${scene.waterArt}
-    ${phase === "bite" ? "     🐟💥" : phase === "caught" && lastCatch ? `     ${lastCatch.fish.ascii}` : "     ～ ～ ～"}`}
-        </pre>
-
+        <pre className="my-4 text-center font-mono text-[10px] md:text-xs opacity-70">{`    ${scene.emoji} ${scene.name} ${scene.emoji}\n         ┌───┐\n         │ ${phase === "bite" ? "!!" : "～"} │\n    ${scene.waterArt}\n    ${lastCatch && phase === "caught" ? "  " + lastCatch.fish.ascii + " " + lastCatch.fish.name : "  ～ ～ ～"}`}</pre>
         <AnimatePresence>
           {lastCatch && phase === "caught" && (
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="mx-auto max-w-sm rounded-2xl bg-white/90 p-4 text-center shadow-lg backdrop-blur"
-            >
+            <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mx-auto max-w-sm rounded-2xl bg-white/90 p-4 text-center shadow-lg">
               <div className="text-4xl">{lastCatch.fish.ascii}</div>
-              <div className="mt-1 font-semibold">{lastCatch.fish.name}</div>
-              <div className={`text-xs ${RARITY_LABELS[lastCatch.fish.rarity]?.color ?? ""}`}>
-                {RARITY_LABELS[lastCatch.fish.rarity]?.label} · {formatGold(lastCatch.fish.value)} 金
-              </div>
-              {lastCatch.isNew && <div className="mt-1 text-xs text-teal-600">🆕 新图鉴！</div>}
+              <div className="font-semibold">{lastCatch.fish.name}</div>
+              <div className={`text-xs ${RARITY_LABELS[lastCatch.fish.rarity]?.color ?? ""}`}>{RARITY_LABELS[lastCatch.fish.rarity]?.label}</div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        <p className="mt-3 text-center text-[10px] opacity-60">{catchRate}</p>
+        <p className="mt-2 text-center text-[10px] opacity-60">{catchRate}</p>
       </div>
-
-      {/* Action buttons */}
       <div className="flex justify-center gap-3 bg-white p-4">
         {phase === "idle" || phase === "caught" ? (
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.95 }}
-            onClick={onCast}
-            className="rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 px-8 py-3 font-semibold text-white shadow-lg hover:shadow-xl"
-          >
-            {FISH_PAGE.castButton}
-          </motion.button>
+          <motion.button type="button" whileTap={{ scale: 0.95 }} onClick={onCast} className="rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 px-8 py-3 font-semibold text-white">{FISH_PAGE.castButton}</motion.button>
         ) : phase === "bite" ? (
-          <motion.button
-            type="button"
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ repeat: Infinity, duration: 0.5 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onReel}
-            className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-8 py-3 font-semibold text-white shadow-lg"
-          >
-            {FISH_PAGE.reelButton}
-          </motion.button>
+          <motion.button type="button" animate={{ scale: [1, 1.08, 1] }} transition={{ repeat: Infinity, duration: 0.5 }} whileTap={{ scale: 0.95 }} onClick={onReel} className="rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-8 py-3 font-semibold text-white">{FISH_PAGE.reelButton}</motion.button>
         ) : (
-          <button
-            type="button"
-            disabled
-            className="cursor-wait rounded-2xl bg-gray-200 px-8 py-3 font-semibold text-gray-500"
-          >
-            {phase === "waiting" ? FISH_PAGE.waitingButton : "…"}
-          </button>
+          <button type="button" disabled className="rounded-2xl bg-gray-200 px-8 py-3 text-gray-500">{FISH_PAGE.waitingButton}</button>
         )}
       </div>
     </div>
   );
 }
 
-function CodexPanel({
-  codex,
-  completedSets,
-}: {
-  codex: Record<string, number>;
-  completedSets: typeof CODEX_SETS;
-}) {
-  const caught = Object.keys(codex).length;
-  const total = FISH.filter((f) => f.category !== "equipment").length;
-
+function CodexPanel({ codex, completedSets, dragonBalls }: { codex: Record<string, number>; completedSets: typeof CODEX_SETS; dragonBalls: number[] }) {
   return (
     <div className="rounded-[28px] bg-white p-5 ring-1 ring-black/[0.06]">
-      <h2 className="text-lg font-semibold">📖 图鉴 {caught}/{total}</h2>
-      <p className="mt-1 text-xs text-[var(--mute)]">集齐套装可提升珍稀鱼种出现概率</p>
-
-      <div className="mt-4 space-y-3">
+      <h2 className="text-lg font-semibold">📖 图鉴</h2>
+      {dragonBalls.length > 0 && <p className="mt-1 text-sm text-red-600">🔴 龙珠收集：{dragonBalls.map((n) => n + "星").join(" ")} ({dragonBalls.length}/7)</p>}
+      <div className="mt-3 space-y-2">
         {CODEX_SETS.map((set) => {
           const done = completedSets.some((s) => s.id === set.id);
-          const progress = set.fishIds.filter((id) => (codex[id] ?? 0) > 0).length;
+          const prog = set.fishIds.filter((id) => (codex[id] ?? 0) > 0).length;
           return (
-            <div
-              key={set.id}
-              className={[
-                "rounded-xl p-3 ring-1",
-                done ? "bg-teal-50 ring-teal-200" : "bg-gray-50 ring-gray-200",
-              ].join(" ")}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{set.name}</span>
-                <span className={`text-xs ${done ? "text-teal-600 font-semibold" : "text-[var(--mute)]"}`}>
-                  {done ? "✅ 已集齐" : `${progress}/${set.fishIds.length}`} · {set.bonusLabel}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {set.fishIds.map((id) => {
-                  const fish = getFishById(id);
-                  const count = codex[id] ?? 0;
-                  return (
-                    <span
-                      key={id}
-                      className={[
-                        "rounded-lg px-2 py-0.5 text-xs",
-                        count > 0 ? "bg-white ring-1 ring-teal-200" : "bg-gray-200/60 text-gray-400",
-                      ].join(" ")}
-                      title={fish?.name}
-                    >
-                      {count > 0 ? fish?.ascii : "？"} {fish?.name?.slice(0, 2)}
-                    </span>
-                  );
-                })}
-              </div>
+            <div key={set.id} className={["rounded-xl p-3 ring-1", done ? "bg-teal-50 ring-teal-200" : "bg-gray-50 ring-gray-200"].join(" ")}>
+              <div className="flex justify-between text-sm"><span className="font-medium">{set.name}</span><span className="text-xs">{done ? "✅" : `${prog}/${set.fishIds.length}`} · {set.bonusLabel}</span></div>
             </div>
           );
         })}
       </div>
-
-      <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-        {FISH.filter((f) => f.category !== "equipment").map((fish) => {
-          const count = codex[fish.id] ?? 0;
+      <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
+        {FISH.filter((f) => !["equipment"].includes(f.category)).slice(0, 40).map((fish) => {
+          const c = codex[fish.id] ?? 0;
           return (
-            <div
-              key={fish.id}
-              className={[
-                "rounded-xl p-2 text-center text-xs",
-                count > 0 ? "bg-white ring-1 ring-black/[0.06]" : "bg-gray-100 text-gray-400",
-              ].join(" ")}
-            >
-              <div className="text-lg">{count > 0 ? fish.ascii : "❓"}</div>
-              <div className="truncate">{count > 0 ? fish.name : "???"}</div>
-              {count > 0 && <div className="text-[10px] text-[var(--mute)]">×{count}</div>}
+            <div key={fish.id} className={["rounded-xl p-2 text-center text-xs", c > 0 ? "bg-white ring-1" : "bg-gray-100 text-gray-400"].join(" ")}>
+              <div className="text-lg">{c > 0 ? fish.ascii : "?"}</div>
+              <div className="truncate">{c > 0 ? fish.name : "???"}</div>
             </div>
           );
         })}
@@ -528,248 +368,86 @@ function CodexPanel({
   );
 }
 
-function ShopPanel({
-  gold,
-  rodLevel,
-  upgradeCost,
-  onUpgrade,
-}: {
-  gold: number;
-  rodLevel: number;
-  upgradeCost: number;
-  onUpgrade: () => void;
-}) {
-  const canAfford = gold >= upgradeCost;
+function ShopPanel({ gold, rodLevel, upgradeCost, onUpgrade }: { gold: number; rodLevel: number; upgradeCost: number; onUpgrade: () => void }) {
   return (
     <div className="rounded-[28px] bg-white p-5 ring-1 ring-black/[0.06]">
       <h2 className="text-lg font-semibold">🏪 商店</h2>
-      <div className="mt-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-5 ring-1 ring-amber-200">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-2xl">🎣</div>
-            <div className="mt-1 font-semibold">精铁鱼竿 Lv.{rodLevel} → Lv.{rodLevel + 1}</div>
-            <div className="mt-1 text-xs text-[var(--mute)]">提升稀有/史诗/传奇/神兽出现概率，解锁新场景</div>
+      <div className="mt-4 rounded-2xl bg-amber-50 p-5 ring-1 ring-amber-200 flex justify-between items-center">
+        <div><div className="text-2xl">🎣</div><div className="font-semibold">鱼竿 Lv.{rodLevel} → {rodLevel + 1}</div></div>
+        <button type="button" disabled={gold < upgradeCost} onClick={onUpgrade} className="rounded-xl bg-teal-600 px-4 py-2 text-sm text-white disabled:opacity-40">💰 {formatGold(upgradeCost)}</button>
+      </div>
+    </div>
+  );
+}
+
+function BagPanel({ inventory, cards, onSell, onSellAll, onUseCard }: { inventory: GameSave["inventory"]; cards: Record<string, number>; onSell: (uid: string) => void; onSellAll: () => void; onUseCard: (id: string) => void }) {
+  const cardEntries = Object.entries(cards).filter(([, n]) => n > 0);
+  return (
+    <div className="rounded-[28px] bg-white p-5 ring-1 ring-black/[0.06]">
+      <div className="flex justify-between"><h2 className="text-lg font-semibold">🎒 背包</h2><button type="button" onClick={onSellAll} className="rounded-xl bg-amber-100 px-3 py-1 text-xs">{FISH_PAGE.sellAll}</button></div>
+      {cardEntries.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-sm font-medium">🃏 卡片</h3>
+          <div className="mt-2 space-y-2">
+            {cardEntries.map(([id, count]) => {
+              const fish = getFishById(id);
+              if (!fish) return null;
+              return (
+                <div key={id} className="flex items-center justify-between rounded-xl bg-pink-50 px-3 py-2">
+                  <span>{fish.ascii} {fish.name} ×{count}</span>
+                  <button type="button" onClick={() => onUseCard(id)} className="rounded-lg bg-pink-500 px-3 py-1 text-xs text-white">使用</button>
+                </div>
+              );
+            })}
           </div>
-          <button
-            type="button"
-            disabled={!canAfford}
-            onClick={onUpgrade}
-            className={[
-              "shrink-0 rounded-xl px-4 py-2 text-sm font-semibold",
-              canAfford
-                ? "bg-teal-600 text-white hover:bg-teal-700"
-                : "cursor-not-allowed bg-gray-200 text-gray-400",
-            ].join(" ")}
-          >
-            💰 {formatGold(upgradeCost)}
-          </button>
         </div>
-        <pre className="mt-4 font-mono text-[10px] text-[var(--mute)]">{`
-  Lv.1  ════○────  基础
-  Lv.3  ════●────  解锁竹韵塘
-  Lv.5  ════●════  解锁星空海
-  Lv.7  ════●════●  解锁火山温泉
-  Lv.10 ════●════●══  解锁云顶仙池
-        `}</pre>
+      )}
+      <div className="mt-4 max-h-60 space-y-2 overflow-y-auto">
+        {inventory.map((item) => {
+          const fish = getFishById(item.fishId);
+          if (!fish) return null;
+          return (
+            <div key={item.uid} className="flex justify-between rounded-xl bg-gray-50 px-3 py-2">
+              <span>{fish.ascii} {fish.name} · {formatGold(fish.value)}金</span>
+              <button type="button" onClick={() => onSell(item.uid)} className="rounded-lg bg-amber-500 px-3 py-1 text-xs text-white">出售</button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function BagPanel({
-  inventory,
-  onSell,
-  onSellAll,
-}: {
-  inventory: GameSave["inventory"];
-  onSell: (uid: string) => void;
-  onSellAll: () => void;
-}) {
+function TowerPanel({ towerFloor, selectedBeast, permanentBonus, towerResult, onChallenge }: { towerFloor: number; selectedBeast: GameSave["beasts"][0] | undefined; permanentBonus: GameSave["permanentBonus"]; towerResult: TowerBattleResult | null; onChallenge: () => void }) {
+  const next = towerFloor + 1;
+  const stats = selectedBeast ? getUnitStats(selectedBeast, permanentBonus) : null;
   return (
     <div className="rounded-[28px] bg-white p-5 ring-1 ring-black/[0.06]">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">🎒 背包 ({inventory.length})</h2>
-        <button
-          type="button"
-          onClick={onSellAll}
-          className="rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
-        >
-          {FISH_PAGE.sellAll}
-        </button>
-      </div>
-      {inventory.length === 0 ? (
-        <p className="mt-8 text-center text-sm text-[var(--mute)]">背包空空如也，去钓几条鱼吧！</p>
-      ) : (
-        <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">
-          {inventory.map((item) => {
-            const fish = getFishById(item.fishId);
-            if (!fish) return null;
-            return (
-              <div
-                key={item.uid}
-                className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 ring-1 ring-black/[0.04]"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{fish.ascii}</span>
-                  <div>
-                    <div className="text-sm font-medium">{fish.name}</div>
-                    <div className={`text-xs ${RARITY_LABELS[fish.rarity]?.color ?? ""}`}>
-                      {RARITY_LABELS[fish.rarity]?.label} · {formatGold(fish.value)} 金
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onSell(item.uid)}
-                  className="rounded-lg bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600"
-                >
-                  出售
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <h2 className="text-lg font-semibold">🏯 通天塔 · 第{next}层{next % 10 === 0 ? " BOSS" : ""}</h2>
+      {selectedBeast && stats && <p className="mt-2 text-sm">出战：{getFishById(selectedBeast.beastId)?.ascii} Lv.{selectedBeast.level} ⚔{stats.atk} 🛡{stats.def} ❤{stats.hp}</p>}
+      <button type="button" onClick={onChallenge} className="mt-4 w-full rounded-2xl bg-indigo-600 py-3 font-semibold text-white">⚔️ 挑战</button>
+      {towerResult && <div className="mt-4 rounded-xl bg-[#1a1a2e] p-3 font-mono text-xs text-green-300">{towerResult.log.map((l, i) => <div key={i}>{l}</div>)}</div>}
     </div>
   );
 }
 
-function TowerPanel({
-  towerFloor,
-  selectedBeast,
-  towerResult,
-  onChallenge,
-}: {
-  towerFloor: number;
-  selectedBeast: GameSave["beasts"][0] | undefined;
-  towerResult: TowerBattleResult | null;
-  onChallenge: () => void;
-}) {
-  const nextFloor = towerFloor + 1;
-  const isBoss = nextFloor % 10 === 0;
-
+function BeastPanel({ beasts, selectedId, permanentBonus, onSelect }: { beasts: GameSave["beasts"]; selectedId: string | null; permanentBonus: GameSave["permanentBonus"]; onSelect: (uid: string) => void }) {
+  const slots = { head: "头", body: "身", weapon: "武", accessory: "饰" } as const;
   return (
-    <div className="rounded-[28px] bg-white p-5 ring-1 ring-black/[0.06]">
-      <h2 className="text-lg font-semibold">🏯 通天塔</h2>
-      <p className="mt-1 text-xs text-[var(--mute)]">灵兽 Lv.3 以上可挑战。每 10 层出现 BOSS。</p>
-
-      <pre className="my-4 text-center font-mono text-xs leading-relaxed text-[var(--mute)]">{`
-        ┌─────────┐
-        │ 第 ${String(nextFloor).padStart(2, " ")} 层 ${isBoss ? "👹" : "👻"} │
-        │ ${"━".repeat(9)} │
-        │    🏯    │
-        │   ╱ │ ╲   │
-        │  ╱  │  ╲  │
-        └─────────┘
-      已通关：${towerFloor} 层`}</pre>
-
-      {selectedBeast ? (
-        <div className="rounded-xl bg-indigo-50 p-3 text-sm">
-          出战：{getFishById(selectedBeast.beastId)?.ascii}{" "}
-          {getFishById(selectedBeast.beastId)?.name ?? selectedBeast.beastId} Lv.{selectedBeast.level}
-          {selectedBeast.level < 3 && (
-            <span className="ml-2 text-red-500">（需要 Lv.3）</span>
-          )}
-        </div>
-      ) : (
-        <p className="text-sm text-red-500">请先在右侧选择灵兽</p>
-      )}
-
-      <button
-        type="button"
-        onClick={onChallenge}
-        disabled={!selectedBeast || selectedBeast.level < 3}
-        className="mt-4 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        ⚔️ 挑战第 {nextFloor} 层{isBoss ? " BOSS" : ""}
-      </button>
-
-      {towerResult && (
-        <div className="mt-4 rounded-xl bg-[#1a1a2e] p-3 font-mono text-xs text-green-300">
-          {towerResult.log.map((line, i) => (
-            <div key={i}>{line}</div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BeastPanel({
-  beasts,
-  selectedId,
-  onSelect,
-}: {
-  beasts: GameSave["beasts"];
-  selectedId: string | null;
-  onSelect: (uid: string) => void;
-}) {
-  const SLOT_LABELS = { head: "头", body: "身", weapon: "武", accessory: "饰" };
-
-  return (
-    <div className="rounded-[28px] bg-white p-4 ring-1 ring-black/[0.06] lg:sticky lg:top-20 lg:self-start">
-      <h2 className="text-base font-semibold">🐲 灵兽栏</h2>
-      <p className="mt-1 text-[10px] text-[var(--mute)]">钓到同类可升级 · 装备自动穿戴 · Lv.3 可闯塔</p>
-
-      {beasts.length === 0 ? (
-        <div className="mt-6 rounded-xl bg-gray-50 p-4 text-center text-xs text-[var(--mute)]">
-          <pre className="font-mono">{`
-   ？ ？ ？
-  尚无灵兽
-  钓神兽或传奇
-  来激活此栏
-          `}</pre>
-        </div>
-      ) : (
+    <div className="rounded-[28px] bg-white p-4 ring-1 ring-black/[0.06] lg:sticky lg:top-20">
+      <h2 className="font-semibold">🐲 灵兽栏</h2>
+      <p className="text-[10px] text-[var(--mute)]">宝物永久加成：+{permanentBonus.atk ?? 0}攻 +{permanentBonus.def ?? 0}防 +{permanentBonus.hp ?? 0}血</p>
+      {beasts.length === 0 ? <p className="mt-4 text-center text-xs text-[var(--mute)]">钓神兽/传奇来激活</p> : (
         <div className="mt-3 space-y-2">
-          {beasts.map((beast) => {
-            const fish = getFishById(beast.beastId);
-            const stats = getUnitStats(beast);
-            const selected = beast.uid === selectedId;
-            const expNeed = beast.level * 50 + (beast.level - 1) * (beast.level - 1) * 20;
-
+          {beasts.map((b) => {
+            const fish = getFishById(b.beastId);
+            const stats = getUnitStats(b, permanentBonus);
+            const expNeed = b.level * 50 + (b.level - 1) ** 2 * 20;
             return (
-              <button
-                key={beast.uid}
-                type="button"
-                onClick={() => onSelect(beast.uid)}
-                className={[
-                  "w-full rounded-xl p-3 text-left transition-all",
-                  selected
-                    ? "bg-teal-50 ring-2 ring-teal-400"
-                    : "bg-gray-50 ring-1 ring-black/[0.04] hover:bg-gray-100",
-                ].join(" ")}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{fish?.ascii ?? "❓"}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-sm">{fish?.name ?? beast.beastId}</div>
-                    <div className="text-xs text-[var(--mute)]">
-                      Lv.{beast.level} · ⚔{stats.atk} 🛡{stats.def} ❤{stats.hp}
-                    </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200">
-                      <div
-                        className="h-full rounded-full bg-teal-500"
-                        style={{ width: `${Math.min(100, (beast.exp / expNeed) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 flex gap-1">
-                  {(["head", "body", "weapon", "accessory"] as const).map((slot) => {
-                    const eqId = beast.equipment[slot];
-                    const eq = eqId ? getEquipmentById(eqId) : null;
-                    return (
-                      <span
-                        key={slot}
-                        className="rounded-md bg-white px-1.5 py-0.5 text-[10px] ring-1 ring-black/[0.06]"
-                        title={eq?.name ?? "空"}
-                      >
-                        {SLOT_LABELS[slot]}:{eq ? eq.ascii : "—"}
-                      </span>
-                    );
-                  })}
-                </div>
+              <button key={b.uid} type="button" onClick={() => onSelect(b.uid)} className={["w-full rounded-xl p-3 text-left", b.uid === selectedId ? "bg-teal-50 ring-2 ring-teal-400" : "bg-gray-50 ring-1"].join(" ")}>
+                <div className="flex gap-2"><span className="text-2xl">{fish?.ascii}</span><div><div className="text-sm font-medium">{fish?.name}</div><div className="text-xs text-[var(--mute)]">Lv.{b.level} ⚔{stats.atk} 🛡{stats.def} ❤{stats.hp}</div></div></div>
+                <div className="mt-1 h-1.5 rounded-full bg-gray-200"><div className="h-full rounded-full bg-teal-500" style={{ width: `${Math.min(100, (b.exp / expNeed) * 100)}%` }} /></div>
+                <div className="mt-1 flex gap-1">{(["head", "body", "weapon", "accessory"] as const).map((s) => <span key={s} className="text-[10px]">{slots[s]}:{b.equipment[s] ? getEquipmentById(b.equipment[s]!)?.ascii : "—"}</span>)}</div>
               </button>
             );
           })}

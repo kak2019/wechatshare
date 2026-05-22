@@ -1,16 +1,14 @@
-import { createNewSave } from "@/lib/fish/engine";
+import { createNewSave, migrateSave } from "@/lib/fish/engine";
 import type { GameSave } from "@/lib/fish/types";
 
-const STORAGE_KEY = "fish-game-save:v1";
+const STORAGE_KEY = "fish-game-save:v2";
 
 export function loadSave(): GameSave {
   if (typeof window === "undefined") return createNewSave();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem("fish-game-save:v1");
     if (!raw) return createNewSave();
-    const parsed = JSON.parse(raw) as GameSave;
-    if (typeof parsed.gold !== "number") return createNewSave();
-    return parsed;
+    return migrateSave(JSON.parse(raw) as Partial<GameSave>);
   } catch {
     return createNewSave();
   }
@@ -25,6 +23,7 @@ export function persistSave(save: GameSave): void {
 export function clearSave(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem("fish-game-save:v1");
 }
 
 export { STORAGE_KEY };
