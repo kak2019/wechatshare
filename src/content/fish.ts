@@ -269,10 +269,10 @@ export const FISH: FishDef[] = [
   { id: "kunpeng", name: "鲲鹏", ascii: "🌊", rarity: "legendary", category: "legendary", value: 6000, baseWeight: 2, canRaise: true },
 
   // 四神兽
-  { id: "qinglong", name: "青龙", ascii: "🐉", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
-  { id: "baihu", name: "白虎", ascii: "🐯", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
-  { id: "zhuque", name: "朱雀", ascii: "🔥", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
-  { id: "xuanwu", name: "玄武", ascii: "🐢", rarity: "mythical", category: "beast", value: 88888, baseWeight: 1, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace"] },
+  { id: "qinglong", name: "青龙", ascii: "🐉", rarity: "mythical", category: "beast", value: 88888, baseWeight: 8, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace", "starry_sea", "volcano_spring"] },
+  { id: "baihu", name: "白虎", ascii: "🐯", rarity: "mythical", category: "beast", value: 88888, baseWeight: 8, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace", "starry_sea", "volcano_spring"] },
+  { id: "zhuque", name: "朱雀", ascii: "🔥", rarity: "mythical", category: "beast", value: 88888, baseWeight: 8, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace", "starry_sea", "volcano_spring"] },
+  { id: "xuanwu", name: "玄武", ascii: "🐢", rarity: "mythical", category: "beast", value: 88888, baseWeight: 8, setId: "four_beasts", canRaise: true, sceneIds: ["cloud_palace", "starry_sea", "volcano_spring"] },
 
   // 奇遇奇物 — 越奇妙越好
   { id: "yi_er", name: "一二", ascii: "🧑", rarity: "legendary", category: "treasure", value: 1314, baseWeight: 2, setId: "couple", statBonus: { atk: 20, hp: 80 }, description: "哎呀！钓上来一个人！一二说：「今天也要开心钓鱼哦～」" },
@@ -282,7 +282,6 @@ export const FISH: FishDef[] = [
   ...CARDS,
 
   // 整蛊奇遇
-  { id: "old_boot", name: "陈年臭靴子", ascii: "👢", rarity: "common", category: "encounter", value: 1, baseWeight: 12, description: "…谁把靴子扔水里的？" },
   { id: "message_bottle", name: "漂流瓶", ascii: "🍾", rarity: "uncommon", category: "encounter", value: 50, baseWeight: 8, description: "瓶中信：「灵渊深处有龙。」" },
   { id: "ufo", name: "微型 UFO", ascii: "🛸", rarity: "epic", category: "encounter", value: 2000, baseWeight: 2, description: "外星文明：「地球钓鱼技术令人震撼。」" },
   { id: "treasure_chest", name: "沉没宝箱", ascii: "🎁", rarity: "rare", category: "encounter", value: 500, baseWeight: 6, description: "开箱：金币叮当响！" },

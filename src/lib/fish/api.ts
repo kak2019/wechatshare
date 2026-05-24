@@ -1,4 +1,72 @@
-import type { GameSave, GlobalEvent, LeaderboardEntry } from "@/lib/fish/types";
+import type { GameSave, LeaderboardEntry } from "@/lib/fish/types";
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  displayName: string;
+}
+
+export async function fetchAuth(): Promise<{ loggedIn: boolean; user?: AuthUser }> {
+  try {
+    const res = await fetch("/api/fish/auth", { cache: "no-store" });
+    const data = (await res.json()) as { ok: boolean; loggedIn: boolean; user?: AuthUser };
+    return { loggedIn: !!data.loggedIn, user: data.user };
+  } catch {
+    return { loggedIn: false };
+  }
+}
+
+export async function login(username: string, password: string) {
+  const res = await fetch("/api/fish/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "login", username, password }),
+  });
+  return (await res.json()) as { ok: boolean; error?: string; user?: AuthUser };
+}
+
+export async function register(username: string, password: string, displayName: string) {
+  const res = await fetch("/api/fish/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "register", username, password, displayName }),
+  });
+  return (await res.json()) as { ok: boolean; error?: string; user?: AuthUser };
+}
+
+export async function logout() {
+  await fetch("/api/fish/auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "logout" }),
+  });
+}
+
+export async function fetchCloudSave(): Promise<GameSave | null> {
+  try {
+    const res = await fetch("/api/fish/save", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { ok: boolean; save?: GameSave };
+    return data.save ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function pushCloudSave(save: GameSave): Promise<GameSave | null> {
+  try {
+    const res = await fetch("/api/fish/save", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ save }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { ok: boolean; save?: GameSave };
+    return data.save ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function syncLeaderboard(save: GameSave): Promise<LeaderboardEntry[] | null> {
   if (!save.playerName.trim()) return null;
@@ -39,7 +107,7 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
 }
 
 export interface EventsResponse {
-  events: GlobalEvent[];
+  events: import("@/lib/fish/types").GlobalEvent[];
   weatherActive: boolean;
   weatherBuffBy: string;
   weatherBuffUntil: number;
@@ -55,7 +123,11 @@ export async function fetchGlobalEvents(): Promise<EventsResponse | null> {
   }
 }
 
-export async function broadcastCatch(playerName: string, message: string, type: GlobalEvent["type"] = "catch") {
+export async function broadcastCatch(
+  playerName: string,
+  message: string,
+  type: "catch" | "weather" | "encounter" | "dragon" = "catch",
+) {
   try {
     await fetch("/api/fish/events", {
       method: "POST",
