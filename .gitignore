@@ -29,3 +29,4 @@ public/swe-worker-*.js
 
 # 钓鱼游戏服务端数据（运行时生成）
 /data/fish/*.json
+/data/fish/saves/

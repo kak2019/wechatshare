@@ -66,6 +66,7 @@ export function migrateSave(raw: Partial<GameSave>): GameSave {
   if (!merged.permanentBonus) merged.permanentBonus = {};
   if (!merged.activeEncounter) merged.activeEncounter = null;
   if (merged.streak === undefined) merged.streak = 0;
+  if (!merged.accountId && raw.accountId) merged.accountId = raw.accountId;
   merged.permanentBonus = recalcPermanentBonus(merged);
   return merged;
 }
@@ -123,10 +124,10 @@ function rarityMultiplier(rarity: FishDef["rarity"]): number {
   switch (rarity) {
     case "common": return 1;
     case "uncommon": return 0.6;
-    case "rare": return 0.25;
-    case "epic": return 0.1;
-    case "legendary": return 0.04;
-    case "mythical": return 0.015;
+    case "rare": return 0.35;
+    case "epic": return 0.18;
+    case "legendary": return 0.08;
+    case "mythical": return 0.12;
     case "equipment": return 0.12;
     case "treasure": return 0.06;
     case "card": return 0.05;
@@ -161,7 +162,10 @@ export function rollCatch(save: GameSave, ctx: RollContext = {}): FishDef {
     if (fish.rarity !== "common" && fish.rarity !== "uncommon") {
       w *= 1 + totalBonus;
     }
-    if (fish.category === "beast") w *= 1 + rodBonus * 2 + codexBonus;
+    if (fish.category === "beast") {
+      w *= 2.5 + rodBonus * 4 + codexBonus * 2;
+      if (save.currentScene === "cloud_palace") w *= 1.8;
+    }
     if (fish.category === "treasure" || fish.category === "card") {
       w *= 1 + totalBonus * 1.5;
     }

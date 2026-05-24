@@ -109,6 +109,7 @@ export interface BeastInstance {
 
 export interface GameSave {
   version: number;
+  accountId?: string;
   playerId: string;
   playerName: string;
   gold: number;
