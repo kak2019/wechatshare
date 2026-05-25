@@ -2,7 +2,7 @@ import {
   LOGIC_GRID_COLS,
   TILE_TYPES,
   TUTORIAL_LAYOUT,
-  getLevelDifficulty,
+  normalizeLevelId,
 } from "@/content/yanglegeyang";
 import type { BoardTile } from "@/lib/yanglegeyang/types";
 
@@ -23,11 +23,12 @@ export function dailySeedString(): string {
   return `${y}-${m}-${day}`;
 }
 
-export function defaultLevelSeed(levelId: number, daily = dailySeedString()): string {
-  return `${levelId}:${daily}`;
+/** round = 已通关轮数，每轮第二关布局不同 */
+export function defaultLevelSeed(levelId: number, daily = dailySeedString(), round = 0): string {
+  const level = normalizeLevelId(levelId);
+  return `${level}:${daily}:r${round}`;
 }
 
-/** mulberry32 PRNG */
 export function mulberry32(seed: number) {
   let s = seed >>> 0;
   return () => {
@@ -50,33 +51,44 @@ function shuffleInPlace<T>(arr: T[], rand: () => number) {
   }
 }
 
-function assignTypes(count: number, typeCount: number, rand: () => number): string[] {
+function assignTypesEasy(count: number, typeCount: number, rand: () => number): string[] {
+  const n = Math.floor(count / 3);
   const pool = TILE_TYPES.slice(0, typeCount).map((t) => t.id);
   const types: string[] = [];
-  let remaining = count;
-  while (remaining > 0) {
-    const typeId = pool[Math.floor(rand() * pool.length)]!;
-    const chunk = Math.min(3, remaining);
-    for (let i = 0; i < chunk; i++) types.push(typeId);
-    remaining -= chunk;
+  for (let i = 0; i < n; i++) {
+    const typeId = pool[i % pool.length]!;
+    for (let j = 0; j < 3; j++) types.push(typeId);
   }
   shuffleInPlace(types, rand);
   return types;
 }
 
-function tileRect(x: number, y: number) {
-  return { left: x, top: y, right: x + 2, bottom: y + 2 };
+function assignTypesHard(count: number, rand: () => number): string[] {
+  const pool = TILE_TYPES.map((t) => t.id);
+  shuffleInPlace(pool, rand);
+  const types: string[] = [];
+  let pi = 0;
+  let remaining = count;
+  while (remaining >= 3) {
+    const typeId = pool[pi % pool.length]!;
+    pi++;
+    for (let i = 0; i < 3; i++) types.push(typeId);
+    remaining -= 3;
+  }
+  shuffleInPlace(types, rand);
+  return types;
 }
 
-function overlaps(a: ReturnType<typeof tileRect>, b: ReturnType<typeof tileRect>) {
-  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-}
-
-function generateTutorialBoard(seed: string): BoardTile[] {
+function boardFromLayout(
+  layout: { layer: number; x: number; y: number }[],
+  seed: string,
+  hard: boolean,
+  typeCount: number,
+): BoardTile[] {
   const rand = mulberry32(hashSeed(seed));
-  const types = assignTypes(TUTORIAL_LAYOUT.length, 4, rand);
-  return TUTORIAL_LAYOUT.map((pos, i) => ({
-    uid: uid("t", i),
+  const types = hard ? assignTypesHard(layout.length, rand) : assignTypesEasy(layout.length, typeCount, rand);
+  return layout.map((pos, i) => ({
+    uid: uid(hard ? "h" : "t", i),
     typeId: types[i]!,
     layer: pos.layer,
     x: pos.x,
@@ -85,105 +97,56 @@ function generateTutorialBoard(seed: string): BoardTile[] {
   }));
 }
 
-function tryPlaceLayer(
-  layer: number,
-  count: number,
-  jitter: number,
-  lowerTiles: BoardTile[],
-  rand: () => number,
-): { x: number; y: number }[] {
-  const positions: { x: number; y: number }[] = [];
-  const maxX = LOGIC_GRID_COLS - 2;
-  const maxY = 8;
-  let attempts = 0;
+function generateTutorialBoard(seed: string): BoardTile[] {
+  return boardFromLayout(TUTORIAL_LAYOUT, seed, false, 3);
+}
 
-  while (positions.length < count && attempts < count * 80) {
-    attempts++;
-    const x = Math.round(rand() * maxX * 2) / 2 + (rand() - 0.5) * jitter;
-    const y = Math.round(rand() * maxY * 2) / 2 + (rand() - 0.5) * jitter;
-    const clampedX = Math.max(0, Math.min(maxX, x));
-    const clampedY = Math.max(0, Math.min(maxY, y));
-    const rect = tileRect(clampedX, clampedY);
+function generateLevel2HardLayout(): { layer: number; x: number; y: number }[] {
+  const positions: { layer: number; x: number; y: number }[] = [];
+  const seen = new Set<string>();
+  const add = (layer: number, x: number, y: number) => {
+    const k = `${layer}:${x.toFixed(2)}:${y.toFixed(2)}`;
+    if (seen.has(k)) return;
+    seen.add(k);
+    positions.push({ layer, x: +x.toFixed(2), y: +y.toFixed(2) });
+  };
 
-    if (layer === 0) {
-      positions.push({ x: clampedX, y: clampedY });
-      continue;
-    }
-
-    const touchesLower = lowerTiles.some((t) => overlaps(rect, tileRect(t.x, t.y)));
-    if (!touchesLower) continue;
-
-    const dup = positions.some((p) => overlaps(rect, tileRect(p.x, p.y)));
-    if (dup) continue;
-
-    positions.push({ x: clampedX, y: clampedY });
-  }
+  for (let i = 0; i < 4; i++) add(0, i * 1.5, 0.5);
+  for (let i = 0; i < 4; i++) add(0, i * 1.5 + 0.75, 2);
+  for (let i = 0; i < 4; i++) add(0, i * 1.5, 3.5);
+  for (let i = 0; i < 3; i++) add(1, i * 1.5 + 0.5, 1);
+  for (let i = 0; i < 3; i++) add(1, i * 1.5 + 0.5, 2.5);
+  for (let i = 0; i < 3; i++) add(1, i * 1.5 + 0.5, 4);
+  add(1, 2.25, 5.25);
+  for (let i = 0; i < 3; i++) add(2, i * 1.5 + 0.75, 1.5);
+  for (let i = 0; i < 3; i++) add(2, i * 1.5 + 0.75, 3);
+  for (let i = 0; i < 3; i++) add(2, i * 1.5 + 0.75, 4.5);
+  add(2, 2.25, 0.25);
+  for (let i = 0; i < 2; i++) add(3, i * 1.5 + 1.25, 2);
+  for (let i = 0; i < 2; i++) add(3, i * 1.5 + 1.25, 3.5);
+  for (let i = 0; i < 2; i++) add(3, i * 1.5 + 1.25, 5);
+  for (let i = 0; i < 2; i++) add(3, i * 1.5 + 0.5, 0.75);
+  for (let i = 0; i < 2; i++) add(4, i * 1.5 + 1.5, 2.25);
+  for (let i = 0; i < 2; i++) add(4, i * 1.5 + 1.5, 3.75);
+  for (let i = 0; i < 2; i++) add(4, i * 1.5 + 1, 1);
+  for (let i = 0; i < 2; i++) add(4, i * 1.5 + 1, 4.75);
+  for (let i = 0; i < 3; i++) add(5, i * 1.5 + 0.75, 2.75);
+  for (let i = 0; i < 3; i++) add(5, i * 1.5 + 0.75, 4.25);
 
   return positions;
 }
 
-function generateProceduralBoard(levelId: number, seed: string): BoardTile[] {
-  const diff = getLevelDifficulty(levelId);
-  const layers =
-    diff.tilesPerLayer.length > 0
-      ? diff.tilesPerLayer.length
-      : diff.layers;
-
-  const tilesPerLayer =
-    diff.tilesPerLayer.length > 0
-      ? diff.tilesPerLayer
-      : Array.from({ length: layers }, (_, i) => 6 + Math.floor(i * 1.2));
-
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const attemptSeed = `${seed}:${attempt}`;
-    const rand = mulberry32(hashSeed(attemptSeed));
-    const board: BoardTile[] = [];
-    let idx = 0;
-    let failed = false;
-
-    for (let layer = 0; layer < layers; layer++) {
-      const count = tilesPerLayer[layer] ?? 6;
-      const lower = board.filter((t) => t.layer < layer);
-      const positions = tryPlaceLayer(layer, count, diff.jitter, lower, rand);
-      if (positions.length < count) {
-        failed = true;
-        break;
-      }
-
-      for (const pos of positions) {
-        board.push({
-          uid: uid(`L${layer}`, idx++),
-          typeId: "placeholder",
-          layer,
-          x: pos.x,
-          y: pos.y,
-          removed: false,
-        });
-      }
-    }
-
-    if (failed) continue;
-
-    const total = board.length;
-    if (total === 0 || total % 3 !== 0) continue;
-
-    const types = assignTypes(total, diff.typeCount, rand);
-    board.forEach((t, i) => {
-      t.typeId = types[i]!;
-    });
-
-    return board;
-  }
-
-  return generateTutorialBoard(seed);
+function generateLevel2Board(seed: string): BoardTile[] {
+  return boardFromLayout(generateLevel2HardLayout(), seed, true, 12);
 }
 
 export function generateLevel(levelId: number, seed?: string): { board: BoardTile[]; seed: string } {
-  const actualSeed = seed ?? defaultLevelSeed(levelId);
-  if (levelId <= 1) {
+  const level = normalizeLevelId(levelId);
+  const actualSeed = seed ?? defaultLevelSeed(level);
+  if (level === 1) {
     return { board: generateTutorialBoard(actualSeed), seed: actualSeed };
   }
-  return { board: generateProceduralBoard(levelId, actualSeed), seed: actualSeed };
+  return { board: generateLevel2Board(actualSeed), seed: actualSeed };
 }
 
 export function getBoardBounds(board: BoardTile[]) {

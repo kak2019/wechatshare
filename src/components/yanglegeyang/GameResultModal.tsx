@@ -13,6 +13,21 @@ interface GameResultModalProps {
 
 export function GameResultModal({ phase, levelId, onRetry, onNext }: GameResultModalProps) {
   const won = phase === "won";
+  const cleared = won && levelId >= 2;
+
+  const title = won
+    ? levelId <= 1
+      ? YANG_PAGE.winTitleLevel1
+      : YANG_PAGE.winTitleLevel2
+    : YANG_PAGE.loseTitle;
+
+  const body = won
+    ? levelId <= 1
+      ? YANG_PAGE.winBodyLevel1
+      : YANG_PAGE.winBodyLevel2
+    : YANG_PAGE.loseBody;
+
+  const nextLabel = levelId <= 1 ? YANG_PAGE.enterLevel2 : YANG_PAGE.playAgain;
 
   return (
     <motion.div
@@ -25,12 +40,12 @@ export function GameResultModal({ phase, levelId, onRetry, onNext }: GameResultM
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
       >
-        <div className="text-5xl">{won ? "🎉" : "😿"}</div>
-        <h2 className="mt-3 text-xl font-bold">{won ? YANG_PAGE.winTitle : YANG_PAGE.loseTitle}</h2>
-        <p className="mt-2 text-sm text-[var(--mute)]">
-          {won ? YANG_PAGE.winBody : YANG_PAGE.loseBody}
-        </p>
-        {!won && <p className="mt-1 text-xs text-[var(--mute)]">{YANG_PAGE.levelLabel(levelId)}</p>}
+        <div className="text-5xl">{cleared ? "🐑" : won ? "🎉" : "😿"}</div>
+        <h2 className="mt-3 text-xl font-bold">{title}</h2>
+        <p className="mt-2 text-sm text-[var(--mute)]">{body}</p>
+        {!won && (
+          <p className="mt-1 text-xs text-[var(--mute)]">{YANG_PAGE.levelLabel(levelId)}</p>
+        )}
         <div className="mt-6 flex flex-col gap-2">
           {won ? (
             <button
@@ -38,7 +53,7 @@ export function GameResultModal({ phase, levelId, onRetry, onNext }: GameResultM
               onClick={onNext}
               className="min-h-[48px] rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 py-3 font-semibold text-white active:scale-[0.98]"
             >
-              {YANG_PAGE.nextLevel}
+              {nextLabel}
             </button>
           ) : null}
           <button

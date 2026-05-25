@@ -26,24 +26,41 @@ export interface LevelDifficulty {
   typeCount: number;
   tilesPerLayer: number[];
   jitter: number;
+  /** 尽量每种牌只出现 3 张，增加槽位压力 */
+  maxTypeSpread: boolean;
+  /** 更紧密堆叠、遮挡更重 */
+  denseStack: boolean;
 }
 
-/** 按关卡段递增难度 */
+/**
+ * 难度曲线对齐正版：第 1 关教学，第 2 关起断崖式加难。
+ */
+/** 正版仅两关：第 1 关教学 + 第 2 关超难 */
+export const MAX_GAME_LEVEL = 2;
+
+export function normalizeLevelId(levelId: number): 1 | 2 {
+  return levelId <= 1 ? 1 : 2;
+}
+
 export function getLevelDifficulty(levelId: number): LevelDifficulty {
-  if (levelId <= 1) {
-    return { layers: 2, typeCount: 4, tilesPerLayer: [6, 6], jitter: 0.2 };
-  }
-  if (levelId <= 3) {
-    return { layers: 3, typeCount: 6, tilesPerLayer: [6, 7, 6], jitter: 0.3 };
-  }
-  if (levelId <= 6) {
-    return { layers: 4, typeCount: 8, tilesPerLayer: [7, 8, 7, 7], jitter: 0.35 };
+  const level = normalizeLevelId(levelId);
+  if (level === 1) {
+    return {
+      layers: 2,
+      typeCount: 3,
+      tilesPerLayer: [6, 3],
+      jitter: 0.15,
+      maxTypeSpread: false,
+      denseStack: false,
+    };
   }
   return {
-    layers: Math.min(6, 4 + Math.floor((levelId - 6) / 2)),
-    typeCount: Math.min(12, 8 + Math.floor((levelId - 6) / 2)),
+    layers: 6,
+    typeCount: 12,
     tilesPerLayer: [],
-    jitter: 0.4,
+    jitter: 0.12,
+    maxTypeSpread: true,
+    denseStack: true,
   };
 }
 
@@ -63,9 +80,10 @@ export const TUTORIAL_LAYOUT: { layer: number; x: number; y: number }[] = [
 export const YANG_PAGE = {
   eyebrow: "Little game for us",
   heading: "羊了个羊",
-  subtitle: "叠牌三消 — 点选牌移入槽位，三张相同消除。清空所有牌即过关！",
+  subtitle: "正版两关：过第一关才能进第二关，通关后可再来一轮。",
   tabs: { play: "游戏", rank: "排行榜" },
-  levelLabel: (n: number) => `第 ${n} 关`,
+  levelLabel: (n: number) => (n <= 1 ? "第一关 · 热身" : "第二关 · 地狱"),
+  roundLabel: (n: number) => `已通关 ${n} 轮`,
   restart: "重开本关",
   shuffle: "重新洗牌",
   props: {
@@ -74,16 +92,19 @@ export const YANG_PAGE = {
     remove: "移出",
   },
   propHint: "每关各 1 次",
-  winTitle: "过关啦！",
-  winBody: "太厉害了，进入下一关？",
+  winTitleLevel1: "第一关通过！",
+  winBodyLevel1: "真正的羊了个羊在第二关…",
+  winTitleLevel2: "羊了个羊通关！",
+  winBodyLevel2: "太狠了！要不再来一轮？",
   loseTitle: "槽位满了",
-  loseBody: "再试一次，你能行的！",
-  nextLevel: "下一关",
-  retry: "再试一次",
+  loseBody: "没事，从第一关重新来，第二关就是这么难！",
+  enterLevel2: "进入第二关",
+  playAgain: "再来一轮",
+  retry: "从第一关重来",
   dockFull: "槽位已满",
   saveNote: "登录后进度云存档，与钓鱼游戏共用账号。",
   rankTitle: "🏆 羊羊排行榜",
-  rankHint: "按最高关卡 → 胜场 → 通关数排序",
+  rankHint: "按通关轮数 → 胜场 → 胜率排序",
   portraitHint: "请旋转至竖屏游玩",
 } as const;
 

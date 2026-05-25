@@ -36,9 +36,9 @@ function savePath(userId: string) {
 export async function getLeaderboard(): Promise<YangLeaderboardEntry[]> {
   const list = await readJson<YangLeaderboardEntry[]>(LEADERBOARD_FILE, []);
   return list.sort((a, b) => {
-    if (b.bestLevel !== a.bestLevel) return b.bestLevel - a.bestLevel;
+    if (b.totalClears !== a.totalClears) return b.totalClears - a.totalClears;
     if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
-    return b.totalClears - a.totalClears;
+    return b.winRate - a.winRate;
   });
 }
 
@@ -51,9 +51,9 @@ export async function upsertLeaderboard(entry: YangLeaderboardEntry): Promise<Ya
 
   const sorted = list
     .sort((a, b) => {
-      if (b.bestLevel !== a.bestLevel) return b.bestLevel - a.bestLevel;
+      if (b.totalClears !== a.totalClears) return b.totalClears - a.totalClears;
       if (b.totalWins !== a.totalWins) return b.totalWins - a.totalWins;
-      return b.totalClears - a.totalClears;
+      return b.winRate - a.winRate;
     })
     .slice(0, MAX_LEADERBOARD);
 
