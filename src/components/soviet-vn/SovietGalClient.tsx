@@ -62,11 +62,11 @@ function runUntilLine(runtime: GameRuntime): {
   while (safety++ < 64) {
     const result: StepResult = advanceStep(state, GAL_NODES);
     state = result.runtime;
-    if (result.needsChoice || state.currentLine) {
-      return { runtime: state, endingId: null };
-    }
     if (result.reachedEnding && result.endingId) {
       return { runtime: state, endingId: result.endingId };
+    }
+    if (result.needsChoice || state.currentLine) {
+      return { runtime: state, endingId: null };
     }
     if (state.stepIndex >= (GAL_NODES[state.nodeId]?.steps.length ?? 0)) {
       const repaired = repairRuntime(state, GAL_NODES);
@@ -145,6 +145,13 @@ export function SovietGalClient() {
     // 仅挂载时尝试恢复一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 若已触发结局但 endingId 未写入（旧 bug 遗留存档），自动补全
+  useEffect(() => {
+    if (runtime.phase === "ending" && runtime.pendingEndingId && !endingId) {
+      finalizeEnding(runtime.pendingEndingId, runtime);
+    }
+  }, [runtime, endingId, finalizeEnding]);
 
   const persistRuntime = useCallback((nextRuntime: GameRuntime) => {
     setSave((prev) => {
@@ -250,7 +257,8 @@ export function SovietGalClient() {
     setSave(next);
   }, [save, runtime.bgm]);
 
-  const activeEnding = endingId ? ENDINGS[endingId] : null;
+  const activeEndingId = endingId ?? runtime.pendingEndingId;
+  const activeEnding = activeEndingId ? ENDINGS[activeEndingId] : null;
   const hasProgress = Boolean(save.inProgress);
 
   return (
@@ -386,7 +394,7 @@ export function SovietGalClient() {
 
           {activeEnding && runtime.phase === "ending" && (
             <EndingScreen
-              key={endingId}
+              key={activeEndingId}
               ending={activeEnding}
               onGallery={() => {
                 setEndingId(null);
@@ -394,7 +402,7 @@ export function SovietGalClient() {
               }}
               onRetry={handleRetry}
               onDream={handleDream}
-              dreamUnlocked={dreamUnlocked && endingId !== "ending_dream"}
+              dreamUnlocked={dreamUnlocked && activeEndingId !== "ending_dream"}
             />
           )}
 
