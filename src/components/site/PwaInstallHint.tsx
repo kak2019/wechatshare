@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { PWA } from "@/content/site";
 
@@ -10,6 +11,13 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 export function PwaInstallHint() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/game/soviet-revival")) return null;
+
+  return <PwaInstallHintInner />;
+}
+
+function PwaInstallHintInner() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null,
   );

@@ -3,13 +3,19 @@
 import { motion } from "framer-motion";
 
 type ChoicePanelProps = {
+  prompt?: string;
   options: { label: string }[];
   onPick: (index: number) => void;
 };
 
-export function ChoicePanel({ options, onPick }: ChoicePanelProps) {
+export function ChoicePanel({ prompt, options, onPick }: ChoicePanelProps) {
   return (
     <div className="flex w-full flex-col gap-2.5">
+      {prompt && (
+        <p className="rounded-lg border border-[#c41e3a]/25 bg-[#0a0808]/70 px-4 py-3 text-sm leading-relaxed text-[#d4c4a8]/90 italic">
+          {prompt}
+        </p>
+      )}
       {options.map((opt, i) => (
         <motion.button
           key={opt.label}

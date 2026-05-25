@@ -22,6 +22,7 @@ import {
   createRuntimeFromSave,
   pickChoice,
   recordEnding,
+  repairRuntime,
   runtimeToProgress,
   startGame,
   type StepResult,
@@ -39,7 +40,7 @@ import { DialogueBox } from "./DialogueBox";
 import { EndingGallery } from "./EndingGallery";
 import { EndingScreen } from "./EndingScreen";
 import { PersonalityResult } from "./PersonalityResult";
-import { StageBackground } from "./StageBackground";
+import { StageBackground, SCENE_LABELS } from "./StageBackground";
 
 function getChoiceStep(runtime: GameRuntime): ChoiceOption[] | null {
   if (!runtime.awaitingChoice) return null;
@@ -56,7 +57,7 @@ function runUntilLine(runtime: GameRuntime): {
   runtime: GameRuntime;
   endingId: string | null;
 } {
-  let state = runtime;
+  let state = repairRuntime(runtime, GAL_NODES);
   let safety = 0;
   while (safety++ < 64) {
     const result: StepResult = advanceStep(state, GAL_NODES);
@@ -68,6 +69,11 @@ function runUntilLine(runtime: GameRuntime): {
       return { runtime: state, endingId: result.endingId };
     }
     if (state.stepIndex >= (GAL_NODES[state.nodeId]?.steps.length ?? 0)) {
+      const repaired = repairRuntime(state, GAL_NODES);
+      if (repaired.awaitingChoice && !state.awaitingChoice) {
+        state = repaired;
+        continue;
+      }
       break;
     }
   }
@@ -118,6 +124,28 @@ export function SovietGalClient() {
     setMuted(save.muted);
   }, [save.muted]);
 
+  // 修复旧存档或异常中断导致的「空白卡住」
+  useEffect(() => {
+    if (runtime.phase !== "playing" || endingId) return;
+    if (runtime.currentLine || runtime.awaitingChoice) return;
+
+    const { runtime: after, endingId: end } = runUntilLine(runtime);
+    if (!after.currentLine && !after.awaitingChoice && !end) return;
+
+    setRuntime(after);
+    setSave((prev) => {
+      const merged: SovietSave = {
+        ...prev,
+        inProgress: runtimeToProgress(after),
+      };
+      persistSave(merged);
+      return merged;
+    });
+    if (end) finalizeEnding(end, after);
+    // 仅挂载时尝试恢复一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const persistRuntime = useCallback((nextRuntime: GameRuntime) => {
     setSave((prev) => {
       const merged: SovietSave = {
@@ -160,6 +188,19 @@ export function SovietGalClient() {
     persistRuntime(after);
     if (end) finalizeEnding(end, after);
   }, [runtime, persistRuntime, finalizeEnding]);
+
+  useEffect(() => {
+    if (runtime.phase !== "playing" || runtime.awaitingChoice || endingId) return;
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        handleAdvance();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [runtime.phase, runtime.awaitingChoice, endingId, handleAdvance]);
 
   const handlePick = useCallback(
     (index: number) => {
@@ -216,33 +257,38 @@ export function SovietGalClient() {
     <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-[#080604] text-[#f5e9d4]">
       <StageBackground scene={runtime.scene} />
 
-      {/* 顶栏 */}
-      <header className="relative z-20 flex items-center justify-between px-4 py-3">
-        <Link
-          href="/"
-          className="text-xs tracking-wider text-white/40 hover:text-white/70"
-        >
-          ← 首页
-        </Link>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleMute}
-            className="rounded border border-white/15 px-2.5 py-1 text-xs text-white/50"
+      {/* 顶栏：场景名居中，避免与返回按钮重叠 */}
+      <header className="relative z-20 shrink-0 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <div className="mx-auto flex max-w-2xl items-center gap-2">
+          <Link
+            href="/"
+            className="shrink-0 rounded-md border border-white/10 bg-black/25 px-2.5 py-1.5 text-[10px] tracking-wide text-white/55 backdrop-blur-sm sm:text-xs"
           >
-            {save.muted ? SITE.unmute : SITE.mute}
-          </button>
-          {runtime.phase !== "title" && (
+            退出
+          </Link>
+          <p className="min-w-0 flex-1 truncate text-center text-[10px] tracking-[0.12em] text-white/45 sm:text-xs">
+            {SCENE_LABELS[runtime.scene]}
+          </p>
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              onClick={() =>
-                setRuntime((r) => ({ ...r, phase: "gallery" }))
-              }
-              className="rounded border border-white/15 px-2.5 py-1 text-xs text-white/50"
+              onClick={toggleMute}
+              className="rounded-md border border-white/10 bg-black/25 px-2 py-1.5 text-[10px] text-white/55 backdrop-blur-sm sm:text-xs"
             >
-              {SITE.gallery}
+              {save.muted ? SITE.unmute : SITE.mute}
             </button>
-          )}
+            {runtime.phase !== "title" && (
+              <button
+                type="button"
+                onClick={() =>
+                  setRuntime((r) => ({ ...r, phase: "gallery" }))
+                }
+                className="rounded-md border border-white/10 bg-black/25 px-2 py-1.5 text-[10px] text-white/55 backdrop-blur-sm sm:text-xs"
+              >
+                档案
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -303,14 +349,27 @@ export function SovietGalClient() {
           {runtime.phase === "playing" && !activeEnding && (
             <motion.div
               key="playing"
-              className="flex min-h-0 flex-1 flex-col justify-end px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
+              className="relative flex min-h-0 flex-1 flex-col justify-end px-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="mx-auto w-full max-w-2xl space-y-3">
+              {!choiceOptions && runtime.currentLine && (
+                <button
+                  type="button"
+                  className="absolute inset-0 z-0 cursor-default"
+                  onClick={handleAdvance}
+                  aria-label={SITE.tapContinue}
+                />
+              )}
+              <div className="relative z-10 mx-auto w-full max-w-2xl space-y-3">
                 {choiceOptions ? (
                   <ChoicePanel
+                    prompt={
+                      runtime.currentLine?.kind === "narrate"
+                        ? runtime.currentLine.text
+                        : undefined
+                    }
                     options={choiceOptions}
                     onPick={handlePick}
                   />
