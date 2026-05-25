@@ -35,6 +35,14 @@ export interface LevelDifficulty {
 /**
  * 难度曲线对齐正版：第 1 关教学，第 2 关起断崖式加难。
  */
+
+/** 第二关层带：顶层易 → 中层 → 底层难 */
+export const LEVEL2_LAYER_BANDS = [
+  { layers: [5, 4], typeCount: 3, mode: "easy" as const },
+  { layers: [3, 2], typeCount: 6, mode: "medium" as const },
+  { layers: [1, 0], typeCount: 12, mode: "hard" as const },
+];
+
 /** 正版仅两关：第 1 关教学 + 第 2 关超难 */
 export const MAX_GAME_LEVEL = 2;
 
@@ -82,7 +90,7 @@ export const YANG_PAGE = {
   heading: "羊了个羊",
   subtitle: "正版两关：过第一关才能进第二关，通关后可再来一轮。",
   tabs: { play: "游戏", rank: "排行榜" },
-  levelLabel: (n: number) => (n <= 1 ? "第一关 · 热身" : "第二关 · 地狱"),
+  levelLabel: (n: number) => (n <= 1 ? "第一关 · 热身" : "第二关 · 渐进"),
   roundLabel: (n: number) => `已通关 ${n} 轮`,
   restart: "重开本关",
   shuffle: "重新洗牌",
@@ -93,11 +101,11 @@ export const YANG_PAGE = {
   },
   propHint: "每关各 1 次",
   winTitleLevel1: "第一关通过！",
-  winBodyLevel1: "真正的羊了个羊在第二关…",
+  winBodyLevel1: "第二关开头不难，越往后越考验…",
   winTitleLevel2: "羊了个羊通关！",
   winBodyLevel2: "太狠了！要不再来一轮？",
   loseTitle: "槽位满了",
-  loseBody: "没事，从第一关重新来，第二关就是这么难！",
+  loseBody: "没事，从第一关重新来——后面那几层才是考验！",
   enterLevel2: "进入第二关",
   playAgain: "再来一轮",
   retry: "从第一关重来",
