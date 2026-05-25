@@ -37,7 +37,7 @@ export function YangLeaderboardPanel({ currentPlayerId }: { currentPlayerId?: st
               <tr className="border-b border-gray-100 text-xs text-[var(--mute)]">
                 <th className="py-2 pr-2">#</th>
                 <th className="py-2 pr-2">玩家</th>
-                <th className="py-2 pr-2">最高关</th>
+                <th className="py-2 pr-2">通关轮</th>
                 <th className="py-2 pr-2">胜场</th>
                 <th className="py-2">通关</th>
               </tr>
@@ -56,7 +56,7 @@ export function YangLeaderboardPanel({ currentPlayerId }: { currentPlayerId?: st
                   >
                     <td className="py-2 pr-2">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
                     <td className="py-2 pr-2">{e.playerName}{isMe ? " (我)" : ""}</td>
-                    <td className="py-2 pr-2">{e.bestLevel}</td>
+                    <td className="py-2 pr-2">{e.totalClears}</td>
                     <td className="py-2 pr-2">{e.totalWins}</td>
                     <td className="py-2">{e.totalClears}</td>
                   </tr>

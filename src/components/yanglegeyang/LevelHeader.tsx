@@ -4,15 +4,21 @@ import { YANG_PAGE } from "@/content/yanglegeyang";
 
 interface LevelHeaderProps {
   levelId: number;
+  totalClears: number;
   onRestart: () => void;
   onReshuffle: () => void;
 }
 
-export function LevelHeader({ levelId, onRestart, onReshuffle }: LevelHeaderProps) {
+export function LevelHeader({ levelId, totalClears, onRestart, onReshuffle }: LevelHeaderProps) {
   return (
     <div className="flex shrink-0 items-center justify-between gap-2 py-1">
-      <span className="text-sm font-semibold">{YANG_PAGE.levelLabel(levelId)}</span>
-      <div className="flex gap-2">
+      <div className="min-w-0">
+        <div className="text-sm font-semibold">{YANG_PAGE.levelLabel(levelId)}</div>
+        {totalClears > 0 ? (
+          <div className="text-[10px] text-[var(--mute)]">{YANG_PAGE.roundLabel(totalClears)}</div>
+        ) : null}
+      </div>
+      <div className="flex shrink-0 gap-2">
         <button
           type="button"
           onClick={onReshuffle}

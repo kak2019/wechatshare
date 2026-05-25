@@ -1,4 +1,4 @@
-import { MAX_DOCK, PROPS_PER_LEVEL, TILE_TYPES } from "@/content/yanglegeyang";
+import { MAX_DOCK, PROPS_PER_LEVEL, TILE_TYPES, normalizeLevelId } from "@/content/yanglegeyang";
 import { generateLevel, defaultLevelSeed, dailySeedString } from "@/lib/yanglegeyang/level-gen";
 import { isTileClickable } from "@/lib/yanglegeyang/occlusion";
 import type { GamePhase,
@@ -36,13 +36,16 @@ export function createNewSave(playerName = "无名羊友"): YangSave {
 
 export function migrateSave(raw: Partial<YangSave>): YangSave {
   const base = createNewSave(raw.playerName ?? "无名羊友");
-  return {
+  const merged = {
     ...base,
     ...raw,
     version: SAVE_VERSION,
     levelSeeds: raw.levelSeeds ?? base.levelSeeds,
     dailySeed: raw.dailySeed ?? base.dailySeed,
   };
+  merged.currentLevel = normalizeLevelId(merged.currentLevel);
+  if ((raw.currentLevel ?? 1) > 2) merged.currentLevel = 1;
+  return merged;
 }
 
 function freshProps(): PropsRemaining {
@@ -101,14 +104,15 @@ function checkLose(dock: string[]): boolean {
 }
 
 export function initLevel(levelId: number, seed?: string): GameState {
-  const { board, seed: actualSeed } = generateLevel(levelId, seed);
+  const level = normalizeLevelId(levelId);
+  const { board, seed: actualSeed } = generateLevel(level, seed);
   return {
     board,
     dock: [],
     stash: [],
     history: [],
     phase: "playing",
-    levelId,
+    levelId: level,
     seed: actualSeed,
     propsRemaining: freshProps(),
   };
@@ -204,13 +208,30 @@ export function usePropRemove(state: GameState): GameState {
 }
 
 export function recordWin(save: YangSave, levelId: number): YangSave {
-  const bestLevel = Math.max(save.bestLevel, levelId);
+  const level = normalizeLevelId(levelId);
+  if (level === 1) {
+    return {
+      ...save,
+      bestLevel: Math.max(save.bestLevel, 1),
+      currentLevel: 2,
+      levelSeeds: {
+        ...save.levelSeeds,
+        2: save.levelSeeds[2] ?? defaultLevelSeed(2, save.dailySeed, save.totalClears),
+      },
+      lastSaved: Date.now(),
+    };
+  }
+  const round = save.totalClears + 1;
   return {
     ...save,
     wins: save.wins + 1,
-    totalClears: save.totalClears + 1,
-    bestLevel,
-    currentLevel: levelId + 1,
+    totalClears: round,
+    bestLevel: 2,
+    currentLevel: 1,
+    levelSeeds: {
+      1: defaultLevelSeed(1, save.dailySeed, round),
+      2: defaultLevelSeed(2, save.dailySeed, round),
+    },
     lastSaved: Date.now(),
   };
 }
@@ -219,6 +240,7 @@ export function recordLoss(save: YangSave): YangSave {
   return {
     ...save,
     losses: save.losses + 1,
+    currentLevel: 1,
     lastSaved: Date.now(),
   };
 }
@@ -226,11 +248,15 @@ export function recordLoss(save: YangSave): YangSave {
 export function ensureDailySeed(save: YangSave): YangSave {
   const daily = dailySeedString();
   if (save.dailySeed === daily) return save;
-  const levelSeeds: Record<number, string> = {};
-  for (let i = 1; i <= save.currentLevel; i++) {
-    levelSeeds[i] = defaultLevelSeed(i, daily);
-  }
-  return { ...save, dailySeed: daily, levelSeeds };
+  return {
+    ...save,
+    dailySeed: daily,
+    currentLevel: 1,
+    levelSeeds: {
+      1: defaultLevelSeed(1, daily, save.totalClears),
+      2: defaultLevelSeed(2, daily, save.totalClears),
+    },
+  };
 }
 
 export function getTileEmoji(typeId: string): string {

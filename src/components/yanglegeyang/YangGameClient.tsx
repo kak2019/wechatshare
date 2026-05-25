@@ -10,7 +10,7 @@ import { LevelHeader } from "@/components/yanglegeyang/LevelHeader";
 import { PropBar } from "@/components/yanglegeyang/PropBar";
 import { TileBoard } from "@/components/yanglegeyang/TileBoard";
 import { YangLeaderboardPanel } from "@/components/yanglegeyang/YangLeaderboardPanel";
-import { LOGIC_GRID_COLS, YANG_PAGE } from "@/content/yanglegeyang";
+import { LOGIC_GRID_COLS, YANG_PAGE, normalizeLevelId } from "@/content/yanglegeyang";
 import type { AuthUser } from "@/lib/fish/api";
 import { fetchAuth, login, logout, register } from "@/lib/fish/api";
 import { fetchCloudSave, pushCloudSave, syncLeaderboard } from "@/lib/yanglegeyang/api";
@@ -25,7 +25,7 @@ import {
   usePropUndo,
 } from "@/lib/yanglegeyang/engine";
 import { getClickableUids } from "@/lib/yanglegeyang/occlusion";
-import { getBoardBounds } from "@/lib/yanglegeyang/level-gen";
+import { defaultLevelSeed, getBoardBounds } from "@/lib/yanglegeyang/level-gen";
 import { loadSave, persistSave } from "@/lib/yanglegeyang/storage";
 import type { GameState, YangSave, YangTab } from "@/lib/yanglegeyang/types";
 
@@ -65,11 +65,13 @@ export function YangGameClient() {
   );
 
   const startLevel = useCallback((s: YangSave, levelId: number, seed?: string) => {
-    const levelSeed = seed ?? s.levelSeeds[levelId] ?? `${levelId}:${s.dailySeed}`;
-    const g = initLevel(levelId, levelSeed);
+    const level = normalizeLevelId(levelId);
+    const levelSeed =
+      seed ?? s.levelSeeds[level] ?? defaultLevelSeed(level, s.dailySeed, s.totalClears);
+    const g = initLevel(level, levelSeed);
     setGame(g);
-    if (!s.levelSeeds[levelId]) {
-      const updated = { ...s, levelSeeds: { ...s.levelSeeds, [levelId]: g.seed } };
+    if (!s.levelSeeds[level] || s.levelSeeds[level] !== g.seed) {
+      const updated = { ...s, levelSeeds: { ...s.levelSeeds, [level]: g.seed } };
       setSave(updated);
       persistSave(updated);
     }
@@ -188,7 +190,8 @@ export function YangGameClient() {
 
 
   const handleRetry = () => {
-    handleRestart();
+    if (!save) return;
+    startLevel(save, save.currentLevel);
   };
 
   const handleWinNext = () => {
@@ -256,6 +259,7 @@ export function YangGameClient() {
         <>
           <LevelHeader
             levelId={game.levelId}
+            totalClears={save.totalClears}
             onRestart={handleRestart}
             onReshuffle={handleReshuffle}
           />
