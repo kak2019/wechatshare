@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Caveat, Ma_Shan_Zheng } from "next/font/google";
 import "./globals.css";
 
-import { SiteFooter } from "@/components/site/SiteFooter";
+import { ConditionalFooter } from "@/components/site/ConditionalFooter";
 import { GlobalEasterEggs } from "@/components/site/GlobalEasterEggs";
 import { PwaInstallHint } from "@/components/site/PwaInstallHint";
 import { PwaRegister } from "@/components/site/PwaRegister";
@@ -72,7 +72,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col font-sans">
         <div className="flex-1">{children}</div>
-        <SiteFooter />
+        <ConditionalFooter />
         <GlobalEasterEggs />
         <PwaRegister />
         <PwaInstallHint />

@@ -32,6 +32,10 @@ export const SITE_META = {
     title: "灵渊钓奇｜我俩的时光",
     description: "钓鱼、集图鉴、养神兽、闯通天塔 — 本地存档小游戏。",
   },
+  yanglegeyang: {
+    title: "羊了个羊｜我俩的时光",
+    description: "叠牌三消小游戏 — 登录云存档，挑战排行榜。",
+  },
 } as const;
 
 /** PWA（添加到主屏幕 / 离线）— 改这里即可更新应用名与主题色 */
@@ -66,6 +70,7 @@ export const NAV = {
     { href: "/letters", label: "信箱" },
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
+    { href: "/game/yanglegeyang", label: "羊羊" },
   ],
   timeMenu: [
     { href: "/#counter", label: "倒数日" },
@@ -84,6 +89,7 @@ export const FOOTER = {
     { href: "/letters", label: "信箱" },
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
+    { href: "/game/yanglegeyang", label: "羊羊" },
   ],
   icp: "津ICP备2021004849号-2",
   icpUrl: "https://beian.miit.gov.cn/",

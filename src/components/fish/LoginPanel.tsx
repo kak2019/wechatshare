@@ -10,16 +10,33 @@ interface LoginPanelProps {
   onLogin: (username: string, password: string) => Promise<string | null>;
   onRegister: (username: string, password: string, displayName: string) => Promise<string | null>;
   onLogout: () => void;
+  /** 移动端：未登录时默认收起，不挡游戏区域 */
+  compact?: boolean;
 }
 
-export function LoginPanel({ user, onLogin, onRegister, onLogout }: LoginPanelProps) {
+export function LoginPanel({ user, onLogin, onRegister, onLogout, compact }: LoginPanelProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState(!user);
+  const [expanded, setExpanded] = useState(compact ? !!user : !user);
+
+  if (!user && compact && !expanded) {
+    return (
+      <div className="mb-2 flex shrink-0 items-center justify-between gap-2 rounded-xl bg-white/80 px-3 py-2 ring-1 ring-black/[0.06]">
+        <span className="text-xs text-[var(--mute)]">未登录 · 本地可玩，登录后云存档</span>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="min-h-[44px] shrink-0 rounded-lg px-3 py-1 text-xs font-medium text-teal-700 ring-1 ring-teal-300 active:bg-teal-50"
+        >
+          登录
+        </button>
+      </div>
+    );
+  }
 
   if (user && !expanded) {
     return (
