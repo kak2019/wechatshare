@@ -46,6 +46,10 @@ const SCENE_STYLES: Record<
   },
 };
 
+export const SCENE_LABELS: Record<SceneId, string> = Object.fromEntries(
+  Object.entries(SCENE_STYLES).map(([k, v]) => [k, v.label]),
+) as Record<SceneId, string>;
+
 type StageBackgroundProps = {
   scene: SceneId;
 };
@@ -91,10 +95,6 @@ export function StageBackground({ scene }: StageBackgroundProps) {
         <path d="M48 15 L52 15 L52 42 L68 42 L68 38 L78 48 L68 58 L68 54 L52 54 L52 85 L48 85 L48 54 L32 54 L32 58 L22 48 L32 38 L32 42 L48 42 Z" />
         <path d="M55 55 C70 55 82 67 82 82 C82 90 76 96 68 96 L38 96 C30 96 24 90 24 82 C24 67 36 55 51 55 Z" />
       </svg>
-
-      <div className="pointer-events-none absolute left-4 top-4 rounded border border-white/10 bg-black/30 px-3 py-1.5 text-[10px] uppercase tracking-[0.25em] text-white/50 backdrop-blur-sm sm:text-xs">
-        {style.label}
-      </div>
     </div>
   );
 }

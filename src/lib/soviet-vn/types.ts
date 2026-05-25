@@ -111,6 +111,8 @@ export type SovietSave = {
     choiceLog: string[];
     scene: SceneId;
     bgm: BgmTrack;
+    awaitingChoice?: boolean;
+    currentLine?: GameRuntime["currentLine"];
   } | null;
   lastSaved: number;
 };

@@ -1,7 +1,9 @@
+import { GAL_NODES } from "@/content/soviet-vn/script";
 import { applyStatDelta, mergeBestStats, resolveEndingId } from "@/lib/soviet-vn/scoring";
 import type {
   BgmTrack,
   GalNode,
+  GalStep,
   GameRuntime,
   SceneId,
   SovietSave,
@@ -9,12 +11,36 @@ import type {
 } from "@/lib/soviet-vn/types";
 import { DEFAULT_STATS } from "@/lib/soviet-vn/types";
 
+/** 存档恢复或节点耗尽时，尝试还原 choice 等待态 */
+export function repairRuntime(
+  runtime: GameRuntime,
+  nodes: Record<string, GalNode>,
+): GameRuntime {
+  if (runtime.awaitingChoice) return runtime;
+
+  const node = nodes[runtime.nodeId];
+  if (!node) return runtime;
+
+  const prevStep: GalStep | undefined = node.steps[runtime.stepIndex - 1];
+  if (prevStep?.type === "choice") {
+    return {
+      ...runtime,
+      awaitingChoice: true,
+      currentLine: prevStep.prompt
+        ? { kind: "narrate", text: prevStep.prompt }
+        : runtime.currentLine,
+    };
+  }
+
+  return runtime;
+}
+
 export function createRuntimeFromSave(
   save: SovietSave,
   startNode: string,
 ): GameRuntime {
   if (save.inProgress) {
-    return {
+    const restored: GameRuntime = {
       nodeId: save.inProgress.nodeId,
       stepIndex: save.inProgress.stepIndex,
       stats: save.inProgress.stats,
@@ -24,9 +50,10 @@ export function createRuntimeFromSave(
       bgm: save.inProgress.bgm,
       phase: "playing",
       pendingEndingId: null,
-      awaitingChoice: false,
-      currentLine: null,
+      awaitingChoice: save.inProgress.awaitingChoice ?? false,
+      currentLine: save.inProgress.currentLine ?? null,
     };
+    return repairRuntime(restored, GAL_NODES);
   }
 
   return {
@@ -54,6 +81,8 @@ export function runtimeToProgress(runtime: GameRuntime): SovietSave["inProgress"
     choiceLog: runtime.choiceLog,
     scene: runtime.scene,
     bgm: runtime.bgm,
+    awaitingChoice: runtime.awaitingChoice,
+    currentLine: runtime.currentLine,
   };
 }
 
