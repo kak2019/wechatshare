@@ -206,6 +206,7 @@ export function advanceStep(
           ...state,
           pendingEndingId: endingId,
           phase: "ending",
+          currentLine: null,
         };
         return {
           runtime: state,
@@ -220,6 +221,7 @@ export function advanceStep(
           ...state,
           pendingEndingId: step.id,
           phase: "ending",
+          currentLine: null,
         };
         return {
           runtime: state,
