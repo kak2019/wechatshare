@@ -185,6 +185,16 @@ export const HOME = {
     mineColumn: `${COUPLE.me}的小心愿`,
     yoursColumn: `${COUPLE.you}的小心愿`,
   },
+  /** 暗室小金毛 — 首页隐藏板块（不在导航栏），克隆声线 MP3 放 public/audio/iloveyou-voice.mp3 或设 NEXT_PUBLIC_DARK_ROOM_AUDIO_URL */
+  darkRoom: {
+    eyebrow: "A quiet room",
+    heading: "暗室里，",
+    headingAccent: "有一只会说话的小白",
+    hint: "房间很暗，小金毛在默默流泪。碰一下那个发光的小白玩偶……",
+    plushAria: "触摸小白玩偶，播放 I love you",
+    loveLine: "I love you",
+    noAudioHint: "把克隆声线的 MP3 放到 public/audio/iloveyou-voice.mp3",
+  },
 } as const;
 
 /** 悄悄话信箱页 */
