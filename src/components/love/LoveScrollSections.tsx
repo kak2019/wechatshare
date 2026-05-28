@@ -11,6 +11,7 @@ import { PlaylistSection } from "./PlaylistSection";
 import { PolaroidsSection } from "./PolaroidsSection";
 import { TimelineSection } from "./TimelineSection";
 import { WishlistSection } from "./WishlistSection";
+import { DarkRoomSection } from "./DarkRoomSection";
 import { SovietRevivalEntry } from "./SovietRevivalEntry";
 
 const fadeUp = {
@@ -128,6 +129,9 @@ export function LoveScrollSections() {
 
       {/* 心愿清单 */}
       <WishlistSection />
+
+      {/* 暗室小金毛 — 隐藏板块，不在导航栏 */}
+      <DarkRoomSection />
 
       {/* 苏联互动小说 Demo 入口 */}
       <SovietRevivalEntry />
