@@ -36,6 +36,10 @@ export const SITE_META = {
     title: "羊了个羊｜我俩的时光",
     description: "叠牌三消小游戏 — 登录云存档，挑战排行榜。",
   },
+  chat: {
+    title: "AI Chat｜我俩的时光",
+    description: "可联网搜索的 AI 聊天 — 自配 API Key 与模型，流式对话。",
+  },
 } as const;
 
 /** PWA（添加到主屏幕 / 离线）— 改这里即可更新应用名与主题色 */
@@ -71,6 +75,7 @@ export const NAV = {
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
     { href: "/game/yanglegeyang", label: "羊羊" },
+    { href: "/chat", label: "AI Chat" },
   ],
   timeMenu: [
     { href: "/#counter", label: "倒数日" },
@@ -90,6 +95,7 @@ export const FOOTER = {
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
     { href: "/game/yanglegeyang", label: "羊羊" },
+    { href: "/chat", label: "AI Chat" },
   ],
   icp: "津ICP备2021004849号-2",
   icpUrl: "https://beian.miit.gov.cn/",
