@@ -187,13 +187,31 @@ export const HOME = {
   },
   /** 暗室小金毛 — 首页隐藏板块（不在导航栏），克隆声线 MP3 放 public/audio/iloveyou-voice.mp3 或设 NEXT_PUBLIC_DARK_ROOM_AUDIO_URL */
   darkRoom: {
-    eyebrow: "A quiet room",
-    heading: "暗室里，",
-    headingAccent: "有一只会说话的小白",
-    hint: "房间很暗，小金毛在默默流泪。碰一下那个发光的小白玩偶……",
-    plushAria: "触摸小白玩偶，播放 I love you",
+    title: "小金毛的秘密房间 ✨",
+    subtitle: "有时候，陪伴就是最温暖的光",
+    description:
+      "在这个只属于我们的小房间里，有一只默默流泪的小金毛，和一个会发光的小白玩偶。",
+    features: [
+      {
+        title: "轻轻触碰",
+        body: "点击或拖动小白玩偶",
+      },
+      {
+        title: "听见爱意",
+        body: "它会用你的声音说出「I love you」",
+      },
+    ],
+    enterRoom: "进入房间",
+    learnMore: "了解更多",
+    dragHint: "点击或拖动我 ❤️",
+    soundOn: "声音：开启",
+    soundOff: "声音：关闭",
+    tip: "小提示：试着多点击几次哦",
+    plushAria: "触摸或拖动小白玩偶，播放 I love you",
     loveLine: "I love you",
     noAudioHint: "把克隆声线的 MP3 放到 public/audio/iloveyou-voice.mp3",
+    learnMoreBody:
+      "把你们的声音克隆成 MP3，放进 public/audio/iloveyou-voice.mp3，小白就会替你说出那句 I love you。",
   },
 } as const;
 
