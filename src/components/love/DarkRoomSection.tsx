@@ -5,6 +5,9 @@ import { useCallback, useRef, useState } from "react";
 
 import { HOME } from "@/content/site";
 
+import { DarkRoomIllustration } from "./DarkRoomIllustration";
+import { PlushDoll } from "./PlushDoll";
+
 const DEFAULT_AUDIO = "/audio/iloveyou-voice.mp3";
 const PINK = "#ff6b8b";
 
@@ -64,119 +67,11 @@ function DarkRoomScene({
 
   return (
     <div
-      className={`relative min-h-[340px] overflow-hidden sm:min-h-[420px] lg:min-h-[520px] ${
+      className={`relative min-h-[360px] overflow-hidden sm:min-h-[440px] lg:min-h-[540px] ${
         entered ? "ring-2 ring-[#ff6b8b]/40 ring-offset-2 ring-offset-[#120e0c]" : ""
       }`}
     >
-      <svg
-        viewBox="0 0 640 480"
-        className="absolute inset-0 size-full"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="dr-sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1a1520" />
-            <stop offset="100%" stopColor="#0e0b10" />
-          </linearGradient>
-          <linearGradient id="dr-floor" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#1c1614" />
-            <stop offset="50%" stopColor="#2a221e" />
-            <stop offset="100%" stopColor="#181412" />
-          </linearGradient>
-          <radialGradient id="dr-lamp" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ffd89a" stopOpacity="0.55" />
-            <stop offset="45%" stopColor="#ffb347" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#ffb347" stopOpacity="0" />
-          </radialGradient>
-          <radialGradient id="dr-plush-light" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#fffef8" stopOpacity="0.95" />
-            <stop offset="35%" stopColor="#fff4dc" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#fff4dc" stopOpacity="0" />
-          </radialGradient>
-          <filter id="dr-blur-soft">
-            <feGaussianBlur stdDeviation="6" />
-          </filter>
-        </defs>
-
-        <rect width="640" height="480" fill="url(#dr-sky)" />
-        <polygon points="0,320 640,320 640,480 0,480" fill="url(#dr-floor)" />
-
-        {/* 窗外城市 */}
-        <rect x="420" y="52" width="120" height="100" rx="6" fill="#0a0810" stroke="#ffffff" strokeOpacity="0.06" />
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <rect
-            key={i}
-            x={432 + (i % 3) * 28}
-            y={68 + Math.floor(i / 3) * 28}
-            width="10"
-            height="14"
-            rx="1"
-            fill="#ffe8a0"
-            opacity={0.15 + (i % 3) * 0.12}
-          />
-        ))}
-        <rect x="420" y="52" width="120" height="100" fill="#6b8fc4" opacity="0.03" />
-
-        {/* 沙发与大熊 */}
-        <ellipse cx="520" cy="298" rx="88" ry="36" fill="#241e1c" />
-        <rect x="448" y="268" width="144" height="44" rx="18" fill="#2e2622" />
-        <ellipse cx="518" cy="256" rx="34" ry="38" fill="#3d342e" />
-        <circle cx="508" cy="242" r="16" fill="#3d342e" />
-        <circle cx="528" cy="242" r="16" fill="#3d342e" />
-        <ellipse cx="518" cy="258" rx="12" ry="9" fill="#4a4038" />
-
-        {/* 梳妆台与暖灯 */}
-        <rect x="48" y="248" width="96" height="72" rx="6" fill="#2a221e" />
-        <rect x="56" y="256" width="80" height="8" rx="2" fill="#3a302a" />
-        <rect x="108" y="220" width="10" height="36" rx="3" fill="#3a302a" />
-        <path d="M 113 220 Q 113 200 118 192 Q 123 186 128 192" fill="#4a4038" />
-        <ellipse cx="118" cy="248" rx="70" ry="80" fill="url(#dr-lamp)" />
-        <polygon points="118,248 180,320 56,320" fill="#ffb347" opacity="0.08" />
-
-        {/* 地毯 */}
-        <ellipse cx="300" cy="352" rx="130" ry="36" fill="#3d2e28" opacity="0.85" />
-        <ellipse cx="300" cy="352" rx="110" ry="28" fill="#4a3830" opacity="0.5" />
-
-        {/* 小金毛 */}
-        <g>
-          <ellipse cx="228" cy="328" rx="52" ry="38" fill="#d4a056" />
-          <ellipse cx="208" cy="292" rx="34" ry="30" fill="#e8b86a" />
-          <ellipse cx="188" cy="278" rx="16" ry="22" fill="#c9924a" transform="rotate(-18 188 278)" />
-          <ellipse cx="228" cy="272" rx="16" ry="22" fill="#c9924a" transform="rotate(18 228 272)" />
-          <ellipse cx="248" cy="318" rx="14" ry="20" fill="#c9924a" transform="rotate(24 248 318)" />
-          <ellipse cx="198" cy="348" rx="10" ry="16" fill="#c9924a" />
-          <ellipse cx="222" cy="352" rx="10" ry="16" fill="#c9924a" />
-          <ellipse cx="252" cy="342" rx="10" ry="16" fill="#c9924a" />
-          {/* 脸 */}
-          <circle cx="200" cy="292" r="5" fill="#3d2a1a" />
-          <circle cx="218" cy="292" r="5" fill="#3d2a1a" />
-          <circle cx="201" cy="291" r="1.8" fill="#fff" opacity="0.7" />
-          <circle cx="219" cy="291" r="1.8" fill="#fff" opacity="0.7" />
-          <path d="M 204 304 Q 210 308 216 304" stroke="#8b5a2a" strokeWidth="2" fill="none" strokeLinecap="round" />
-          <path d="M 194 284 Q 200 280 206 284" stroke="#a07030" strokeWidth="2" fill="none" strokeLinecap="round" />
-          <path d="M 212 284 Q 218 280 224 284" stroke="#a07030" strokeWidth="2" fill="none" strokeLinecap="round" />
-          {/* 眼泪 */}
-          <motion.ellipse
-            cx="198"
-            cy="300"
-            rx="3"
-            ry="5"
-            fill="#7ec8f0"
-            animate={{ cy: [300, 318, 300], opacity: [0.4, 0.9, 0.4] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.ellipse
-            cx="220"
-            cy="300"
-            rx="3"
-            ry="5"
-            fill="#7ec8f0"
-            animate={{ cy: [300, 318, 300], opacity: [0.4, 0.9, 0.4] }}
-            transition={{ duration: 2.2, repeat: Infinity, delay: 0.5, ease: "easeInOut" }}
-          />
-        </g>
-      </svg>
+      <DarkRoomIllustration comforted={playing || showBubble} />
 
       {/* 发光小白 + 拖拽 */}
       <motion.div
@@ -185,9 +80,9 @@ function DarkRoomScene({
         aria-label={HOME.darkRoom.plushAria}
         drag
         dragElastic={0.12}
-        dragConstraints={{ left: -40, right: 40, top: -30, bottom: 30 }}
+        dragConstraints={{ left: -48, right: 48, top: -36, bottom: 36 }}
         style={{ x: dragX, y: dragY }}
-        className="absolute left-[58%] top-[54%] z-20 cursor-grab touch-none outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[#ff6b8b]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:left-[56%] sm:top-[52%]"
+        className="absolute left-[54%] top-[58%] z-20 -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[#ff6b8b]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:left-[56%] sm:top-[56%]"
         onDragStart={() => {
           draggedRef.current = true;
         }}
@@ -217,24 +112,18 @@ function DarkRoomScene({
             : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
         }
       >
-        <div className="relative size-[88px] sm:size-[108px]">
+        <div className="relative size-[96px] sm:size-[118px]">
           <motion.div
-            className="absolute inset-[-40%] rounded-full bg-[radial-gradient(circle,#fffef5_0%,#ffe8b8_35%,transparent_70%)]"
-            animate={{ opacity: playing ? [0.7, 1, 0.7] : [0.45, 0.65, 0.45] }}
+            className="absolute inset-[-45%] rounded-full bg-[radial-gradient(circle,#fffef8_0%,#ffe8b8_30%,transparent_68%)]"
+            animate={{ opacity: playing ? [0.75, 1, 0.75] : [0.5, 0.72, 0.5] }}
             transition={{ duration: playing ? 0.8 : 2.5, repeat: Infinity, ease: "easeInOut" }}
           />
-          <svg viewBox="0 0 100 100" className="relative size-full drop-shadow-[0_8px_24px_rgba(255,240,200,0.45)]">
-            <ellipse cx="50" cy="62" rx="28" ry="32" fill="#fffef8" />
-            <circle cx="50" cy="38" r="26" fill="#ffffff" />
-            <ellipse cx="38" cy="34" rx="10" ry="14" fill="#fff8f0" />
-            <ellipse cx="62" cy="34" rx="10" ry="14" fill="#fff8f0" />
-            <circle cx="42" cy="38" r="3.5" fill="#3a2a38" opacity="0.55" />
-            <circle cx="58" cy="38" r="3.5" fill="#3a2a38" opacity="0.55" />
-            <ellipse cx="36" cy="46" rx="7" ry="4" fill="#ffb8c8" opacity="0.45" />
-            <ellipse cx="64" cy="46" rx="7" ry="4" fill="#ffb8c8" opacity="0.45" />
-            <ellipse cx="28" cy="58" rx="9" ry="12" fill="#fff8f0" />
-            <ellipse cx="72" cy="58" rx="9" ry="12" fill="#fff8f0" />
-          </svg>
+          <motion.div
+            className="absolute inset-[-20%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.35)_0%,transparent_70%)]"
+            animate={{ scale: playing ? [1, 1.12, 1] : [1, 1.06, 1] }}
+            transition={{ duration: playing ? 0.9 : 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <PlushDoll playing={playing} />
         </div>
       </motion.div>
 
@@ -242,7 +131,7 @@ function DarkRoomScene({
       <AnimatePresence>
         {showBubble && (
           <motion.div
-            className="pointer-events-none absolute left-[68%] top-[38%] z-30 sm:left-[66%] sm:top-[36%]"
+            className="pointer-events-none absolute left-[64%] top-[34%] z-30 -translate-x-1/2 sm:left-[62%] sm:top-[32%]"
             initial={{ opacity: 0, scale: 0.7, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 6 }}
@@ -267,7 +156,7 @@ function DarkRoomScene({
       {/* 虚线引导 + 手型光标 */}
       {!showBubble && clickCount < 2 && (
         <motion.div
-          className="pointer-events-none absolute left-[48%] top-[58%] z-10 flex items-center gap-2 sm:left-[46%] sm:top-[56%]"
+          className="pointer-events-none absolute left-[44%] top-[60%] z-10 flex items-center gap-2 sm:left-[42%] sm:top-[58%]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
@@ -289,11 +178,11 @@ function DarkRoomScene({
 
       {clickCount < 1 && (
         <motion.div
-          className="pointer-events-none absolute left-[62%] top-[62%] z-30 text-white/80 sm:left-[60%] sm:top-[60%]"
-        animate={{ x: [0, 6, 0], y: [0, 4, 0] }}
-        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <HandIcon className="size-7 drop-shadow-lg sm:size-8" />
+          className="pointer-events-none absolute left-[58%] top-[64%] z-30 text-white/80 sm:left-[56%] sm:top-[62%]"
+          animate={{ x: [0, 6, 0], y: [0, 4, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <HandIcon className="size-7 drop-shadow-lg sm:size-8" />
         </motion.div>
       )}
 
