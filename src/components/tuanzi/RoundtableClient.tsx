@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import Markdown from "react-markdown";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { BubbleMarkdown } from "@/components/tuanzi/BubbleMarkdown";
 import { RoleSeat, type SeatRole } from "@/components/tuanzi/RoleSeat";
 import { UtteranceBubble, type BubbleMessage } from "@/components/tuanzi/UtteranceBubble";
 import { TUANZI_PAGE } from "@/content/site";
@@ -335,14 +335,16 @@ export function RoundtableClient() {
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
-            className="mt-12 space-y-5"
+            className="mt-12 space-y-6 sm:space-y-7"
           >
             <h2 className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-stone-400">
               {TUANZI_PAGE.transcript}
             </h2>
-            {messages.map((msg, i) => (
-              <UtteranceBubble key={msg.id} msg={msg} index={i} />
-            ))}
+            <div className="mx-auto flex max-w-3xl flex-col gap-5 sm:gap-6">
+              {messages.map((msg, i) => (
+                <UtteranceBubble key={msg.id} msg={msg} index={i} />
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -351,18 +353,19 @@ export function RoundtableClient() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-10 rounded-2xl border border-amber-200/70 bg-amber-50/50 p-6"
+          className="mt-10 overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-[#fff9eb] p-5 shadow-[0_10px_40px_rgba(255,201,60,0.12)] sm:p-6"
         >
           <button
             type="button"
-            className="mb-3 text-xs font-semibold text-amber-800/80"
+            className="flex w-full items-center justify-between text-left text-sm font-semibold text-amber-900/90"
             onClick={() => setMinutesOpen((o) => !o)}
           >
-            {TUANZI_PAGE.minutesTitle}
+            <span>{TUANZI_PAGE.minutesTitle}</span>
+            <span className="text-xs text-amber-700/60">{minutesOpen ? "收起" : "展开"}</span>
           </button>
           {minutesOpen && (
-            <div className="prose prose-sm max-w-none text-stone-700 prose-headings:text-amber-900/90">
-              <Markdown>{minutes}</Markdown>
+            <div className="mt-4 border-t border-amber-200/60 pt-4">
+              <BubbleMarkdown content={minutes} variant="minutes" />
             </div>
           )}
         </motion.div>

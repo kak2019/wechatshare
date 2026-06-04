@@ -77,6 +77,31 @@ html[data-night="true"] body {
   }
 }
 
+@keyframes tuanzi-cursor {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* 团子圆桌：气泡内 Markdown 细调 */
+.tuanzi-md--evidence blockquote {
+  border-left-color: rgb(56 189 248 / 0.55);
+  background: rgb(224 242 254 / 0.45);
+}
+
+.tuanzi-md--minutes h4,
+.tuanzi-md--minutes h3 {
+  color: rgb(120 53 15 / 0.85);
+}
+
+.tuanzi-md p:only-child {
+  margin-bottom: 0;
+}
+
 @keyframes vinyl-spin {
   from {
     transform: rotate(0deg);
