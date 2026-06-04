@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 团子圆桌（/tuanzi）
+
+多智能体圆桌：角色在 `content/tuanzi/roles/*.md` 用 Markdown 定义，引擎在 `src/lib/tuanzi/` 加载并调度，前端只渲染 SSE 气泡与纪要。
+
+### 环境变量
+
+复制 `.env.example` 为 `.env.local` 并填入：
+
+- `MIMO_API_KEY` — 小米 MiMo 联网搜索（`mimo-v2.5-pro`）
+- `SILICONFLOW_API_KEY` — 硅基流动（`Pro/zai-org/GLM-5.1`）
+- `DEEPSEEK_API_KEY` — DeepSeek V4 Pro（`deepseek-v4-pro`）
+
+新增角色：在 `content/tuanzi/roles/` 添加 `.md` 即可，详见 `content/tuanzi/README.md`。
