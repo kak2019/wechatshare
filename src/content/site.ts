@@ -36,6 +36,10 @@ export const SITE_META = {
     title: "羊了个羊｜我俩的时光",
     description: "叠牌三消小游戏 — 登录云存档，挑战排行榜。",
   },
+  tuanzi: {
+    title: "团子圆桌｜我俩的时光",
+    description: "多智能体圆桌 — Markdown 定义角色，先联网再讨论。",
+  },
 } as const;
 
 /** PWA（添加到主屏幕 / 离线）— 改这里即可更新应用名与主题色 */
@@ -71,6 +75,7 @@ export const NAV = {
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
     { href: "/game/yanglegeyang", label: "羊羊" },
+    { href: "/tuanzi", label: "团子" },
   ],
   timeMenu: [
     { href: "/#counter", label: "倒数日" },
@@ -90,6 +95,7 @@ export const FOOTER = {
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
     { href: "/game/yanglegeyang", label: "羊羊" },
+    { href: "/tuanzi", label: "团子" },
   ],
   icp: "津ICP备2021004849号-2",
   icpUrl: "https://beian.miit.gov.cn/",
@@ -506,6 +512,23 @@ export const WISHES: WishItem[] = [
   { id: "w7", text: "写满一整本手帐", from: "me" },
   { id: "w8", text: "一起完成一次马拉松（5km 也算）", from: "you" },
 ];
+
+/** 团子圆桌页文案 */
+export const TUANZI_PAGE = {
+  eyebrow: "多智能体圆桌",
+  title: "团子圆桌",
+  subtitle:
+    "角色用 Markdown 定义，引擎加载执行，前端只负责渲染。议题先由小米 MiMo 联网检索，再由各模型席位讨论，团子主持并整理纪要。",
+  seatsLabel: "圆桌席位（可多选分析席）",
+  topicLabel: "今天要讨论什么？",
+  topicPlaceholder: "例如：周末去哪玩、要不要换手机、学习计划怎么定……",
+  start: "开始圆桌",
+  running: "会议进行中…",
+  transcript: "会议实录",
+  minutesTitle: "团子纪要 ▾",
+  noKeyHint:
+    "尚未配置模型 API Key。请在服务器设置 MIMO_API_KEY、SILICONFLOW_API_KEY、DEEPSEEK_API_KEY（见 .env.example）。",
+} as const;
 
 export type Letter = {
   id: string;
