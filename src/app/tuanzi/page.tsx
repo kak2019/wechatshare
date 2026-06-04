@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 
 export default function TuanziPage() {
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] lg:flex lg:flex-col lg:overflow-hidden">
       <SiteTopNav />
-      <main>
+      <main className="lg:min-h-0 lg:flex-1">
         <RoundtableClient />
       </main>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { BubbleMarkdown } from "@/components/tuanzi/BubbleMarkdown";
 import { RoleSeat, type SeatRole } from "@/components/tuanzi/RoleSeat";
@@ -47,6 +47,45 @@ function upsertMessage(list: BubbleMessage[], patch: Partial<BubbleMessage> & { 
   return next;
 }
 
+function PageHeader({ compact }: { compact?: boolean }) {
+  return (
+    <>
+      <motion.p
+        className={[
+          "text-xs font-semibold uppercase tracking-[0.4em] text-amber-800/70",
+          compact ? "text-left" : "text-center",
+        ].join(" ")}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        {TUANZI_PAGE.eyebrow}
+      </motion.p>
+      <motion.h1
+        className={[
+          "font-semibold tracking-tight",
+          compact ? "mt-2 text-2xl text-left" : "mt-4 text-center text-4xl sm:text-5xl",
+        ].join(" ")}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        {TUANZI_PAGE.title}
+      </motion.h1>
+      <motion.p
+        className={[
+          "mt-3 text-sm leading-relaxed text-stone-500",
+          compact ? "text-left" : "mx-auto max-w-lg text-center",
+        ].join(" ")}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        {TUANZI_PAGE.subtitle}
+      </motion.p>
+    </>
+  );
+}
+
 export function RoundtableClient() {
   const [config, setConfig] = useState<ConfigPayload | null>(null);
   const [rolesData, setRolesData] = useState<RolesPayload | null>(null);
@@ -58,6 +97,7 @@ export function RoundtableClient() {
   const [error, setError] = useState<string | null>(null);
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
   const [minutesOpen, setMinutesOpen] = useState(true);
+  const transcriptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -239,45 +279,30 @@ export function RoundtableClient() {
 
   const canStart = config?.canStartMeeting && topic.trim() && selected.size > 0 && !running;
 
-  return (
-    <section className="relative mx-auto max-w-3xl px-6 py-16 sm:py-24">
-      <motion.p
-        className="text-center text-xs font-semibold uppercase tracking-[0.4em] text-amber-800/70"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        {TUANZI_PAGE.eyebrow}
-      </motion.p>
-      <motion.h1
-        className="mt-4 text-center text-4xl font-semibold tracking-tight sm:text-5xl"
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
-        {TUANZI_PAGE.title}
-      </motion.h1>
-      <motion.p
-        className="mx-auto mt-4 max-w-lg text-center text-sm leading-relaxed text-stone-500"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        {TUANZI_PAGE.subtitle}
-      </motion.p>
+  useEffect(() => {
+    const panel = transcriptRef.current;
+    if (!panel || messages.length === 0) return;
+    if (!window.matchMedia("(min-width: 1024px)").matches) return;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    panel.scrollTo({
+      top: panel.scrollHeight,
+      behavior: prefersReduced ? "auto" : "smooth",
+    });
+  }, [messages, minutes]);
 
+  const controlPanel = (
+    <>
       {!config?.hasAnyKey && (
-        <p className="mt-8 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-center text-sm text-amber-900/80">
+        <p className="rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-900/80 lg:text-left">
           {TUANZI_PAGE.noKeyHint}
         </p>
       )}
 
       {rolesData && (
-        <div className="mt-10">
-          <p className="mb-3 text-center text-xs text-stone-500">{TUANZI_PAGE.seatsLabel}</p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {host && (
-              <RoleSeat role={host} disabled />
-            )}
+        <div>
+          <p className="mb-3 text-xs text-stone-500 lg:text-left">{TUANZI_PAGE.seatsLabel}</p>
+          <div className="flex flex-wrap justify-center gap-3 lg:justify-start">
+            {host && <RoleSeat role={host} disabled />}
             {scout && (
               <div className="flex flex-col items-center gap-1 rounded-2xl border border-sky-200/60 bg-sky-50/50 px-4 py-3">
                 <span className="text-xs font-semibold text-sky-800">{scout.name}</span>
@@ -301,7 +326,7 @@ export function RoundtableClient() {
         </div>
       )}
 
-      <div className="mt-8">
+      <div>
         <label className="block text-xs font-medium text-stone-500">{TUANZI_PAGE.topicLabel}</label>
         <textarea
           value={topic}
@@ -313,7 +338,7 @@ export function RoundtableClient() {
         />
       </div>
 
-      <div className="mt-6 flex justify-center">
+      <div className="flex justify-center lg:justify-start">
         <motion.button
           type="button"
           disabled={!canStart}
@@ -326,34 +351,57 @@ export function RoundtableClient() {
         </motion.button>
       </div>
 
-      {error && (
-        <p className="mt-4 text-center text-sm text-rose-600">{error}</p>
-      )}
+      {error && <p className="text-center text-sm text-rose-600 lg:text-left">{error}</p>}
 
-      <AnimatePresence>
-        {messages.length > 0 && (
+      {config && (
+        <div className="flex flex-wrap justify-center gap-2 lg:justify-start">
+          {config.providers.map((p) => (
+            <span
+              key={p.id}
+              className={[
+                "rounded-full px-2 py-1 text-[10px]",
+                p.configured ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-stone-400",
+              ].join(" ")}
+            >
+              {p.label}
+              {p.configured ? " ✓" : ""}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  const transcriptPanel = (
+    <>
+      {messages.length > 0 ? (
+        <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            className="mt-12 space-y-6 sm:space-y-7"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-5 sm:space-y-6"
           >
-            <h2 className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-stone-400">
+            <h2 className="sticky top-0 z-10 -mx-1 bg-gradient-to-b from-white/95 via-white/90 to-transparent px-1 pb-3 text-xs font-semibold uppercase tracking-[0.3em] text-stone-400 backdrop-blur-sm lg:text-left">
               {TUANZI_PAGE.transcript}
             </h2>
-            <div className="mx-auto flex max-w-3xl flex-col gap-5 sm:gap-6">
+            <div className="flex flex-col gap-5 sm:gap-6">
               {messages.map((msg, i) => (
                 <UtteranceBubble key={msg.id} msg={msg} index={i} />
               ))}
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      ) : (
+        <div className="flex min-h-[12rem] flex-col items-center justify-center rounded-2xl border border-dashed border-stone-200/90 bg-stone-50/40 px-6 py-12 text-center lg:min-h-[20rem]">
+          <p className="text-sm text-stone-400">开始圆桌后，讨论将在这里逐条显示</p>
+        </div>
+      )}
 
       {minutes && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-10 overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-[#fff9eb] p-5 shadow-[0_10px_40px_rgba(255,201,60,0.12)] sm:p-6"
+          className="mt-6 overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-[#fff9eb] p-5 shadow-[0_10px_40px_rgba(255,201,60,0.12)] sm:p-6 lg:mt-8"
         >
           <button
             type="button"
@@ -370,23 +418,44 @@ export function RoundtableClient() {
           )}
         </motion.div>
       )}
+    </>
+  );
 
-      {config && (
-        <div className="mt-8 flex flex-wrap justify-center gap-2">
-          {config.providers.map((p) => (
-            <span
-              key={p.id}
-              className={[
-                "rounded-full px-2 py-1 text-[10px]",
-                p.configured ? "bg-emerald-100 text-emerald-800" : "bg-stone-100 text-stone-400",
-              ].join(" ")}
-            >
-              {p.label}
-              {p.configured ? " ✓" : ""}
-            </span>
-          ))}
+  return (
+    <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:py-24 lg:flex lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)] lg:flex-col lg:py-6">
+      <div className="lg:hidden">
+        <PageHeader />
+      </div>
+
+      <div className="mt-10 flex min-h-0 flex-1 flex-col gap-10 lg:mt-0 lg:flex-row lg:gap-8">
+        {/* 左侧：桌面端固定，不参与右侧滚动 */}
+        <aside className="shrink-0 space-y-6 lg:w-[min(100%,22rem)] lg:space-y-5 xl:w-80">
+          <div className="hidden lg:block">
+            <PageHeader compact />
+          </div>
+          {controlPanel}
+        </aside>
+
+        {/* 右侧：桌面端独立滚动；手机端随页面下滚 */}
+        <div
+          className={[
+            "flex min-h-0 min-w-0 flex-1 flex-col",
+            "lg:overflow-hidden lg:rounded-2xl lg:border lg:border-stone-200/70",
+            "lg:bg-[#fffdf8]/90 lg:shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]",
+          ].join(" ")}
+        >
+          <div
+            ref={transcriptRef}
+            className={[
+              "flex flex-1 flex-col gap-6 px-0 py-0",
+              "lg:overflow-y-auto lg:overscroll-contain lg:px-5 lg:py-5",
+              "scroll-smooth",
+            ].join(" ")}
+          >
+            {transcriptPanel}
+          </div>
         </div>
-      )}
+      </div>
     </section>
   );
 }
