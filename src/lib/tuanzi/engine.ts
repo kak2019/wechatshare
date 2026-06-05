@@ -2,12 +2,13 @@ import { randomUUID } from "crypto";
 
 import { completeText, messagesWithSystem, streamCompletion } from "@/lib/tuanzi/llm";
 import { createMeeting, getMeeting, updateMeeting } from "@/lib/tuanzi/meeting-store";
+import { isProviderConfigured } from "@/lib/tuanzi/providers";
 import {
   getHostRole,
+  getRole,
   getWebSearchRole,
   resolveParticipants,
 } from "@/lib/tuanzi/role-loader";
-import { isProviderConfigured } from "@/lib/tuanzi/providers";
 import type { Meeting, SseEvent, TuanziRole, Utterance } from "@/lib/tuanzi/types";
 
 export type StartMeetingInput = {
@@ -15,6 +16,8 @@ export type StartMeetingInput = {
   participantIds: string[];
   maxRounds?: number;
 };
+
+const JOKER_ID = "duanzishou";
 
 function uid(): string {
   return randomUUID();
@@ -25,6 +28,12 @@ function summarizeUtterances(utterances: Utterance[], max = 6): string {
     .slice(-max)
     .map((u) => `【${u.roleName}·${u.modelLabel}】${u.content.slice(0, 280)}`)
     .join("\n\n");
+}
+
+function splitParticipants(participants: TuanziRole[]) {
+  const analysts = participants.filter((p) => p.id !== JOKER_ID);
+  const joker = participants.find((p) => p.id === JOKER_ID);
+  return { analysts, joker };
 }
 
 async function* emitStream(
@@ -88,6 +97,10 @@ export function createMeetingRecord(input: StartMeetingInput): Meeting {
   if (!topic) throw new Error("请输入议题");
   const maxRounds = Math.min(3, Math.max(1, input.maxRounds ?? 2));
   const participants = resolveParticipants(input.participantIds);
+  const { analysts } = splitParticipants(participants);
+  if (analysts.length < 1) {
+    throw new Error("请至少选择一位分析席（段子手仅负责终场点评）");
+  }
   const scout = getWebSearchRole();
   if (scout && !isProviderConfigured(scout.provider)) {
     throw new Error("联网检索需要配置 MIMO_API_KEY");
@@ -100,7 +113,6 @@ export function createMeetingRecord(input: StartMeetingInput): Meeting {
     maxRounds,
     phase: "pending",
     evidencePack: "",
-    minutes: "",
     utterances: [],
     createdAt: Date.now(),
   };
@@ -118,6 +130,7 @@ export async function* runMeeting(meetingId: string): AsyncGenerator<SseEvent> {
   const host = getHostRole();
   const scout = getWebSearchRole();
   const participants = resolveParticipants(meeting.participantIds);
+  const { analysts, joker } = splitParticipants(participants);
   const topic = meeting.topic;
 
   try {
@@ -174,6 +187,11 @@ export async function* runMeeting(meetingId: string): AsyncGenerator<SseEvent> {
       ? `\n\n## 联网资料包\n${evidencePack}`
       : "\n\n（本次无联网资料包）";
 
+    const seatNames = [
+      ...analysts.map((p) => p.name),
+      ...(joker ? [`${joker.name}（终场点评）`] : []),
+    ].join("、");
+
     updateMeeting(meetingId, { phase: "host_open" });
     yield {
       type: "host_open",
@@ -182,7 +200,7 @@ export async function* runMeeting(meetingId: string): AsyncGenerator<SseEvent> {
       modelLabel: host.modelLabel,
     };
 
-    const openPrompt = `议题：${topic}\n与会分析席：${participants.map((p) => p.name).join("、")}${evidenceBlock}\n\n请作为主持人做简短开场（不超过 120 字）。`;
+    const openPrompt = `议题：${topic}\n与会席次：${seatNames}${evidenceBlock}\n\n请作为主持人做简短开场（不超过 120 字）。`;
     for await (const chunk of emitStream(host, openPrompt, { phase: "host_open", round: 0 })) {
       yield chunk.event;
       if (chunk.utterance) {
@@ -197,7 +215,7 @@ export async function* runMeeting(meetingId: string): AsyncGenerator<SseEvent> {
       const history = getMeeting(meetingId)!.utterances;
       const historyText = summarizeUtterances(history);
 
-      for (const role of participants) {
+      for (const role of analysts) {
         const roundPrompt =
           round === 1
             ? `议题：${topic}${evidenceBlock}\n\n请给出你的独立观点（第 ${round} 轮）。`
@@ -213,62 +231,25 @@ export async function* runMeeting(meetingId: string): AsyncGenerator<SseEvent> {
       }
     }
 
-    updateMeeting(meetingId, { phase: "minutes" });
-    const allHistory = summarizeUtterances(getMeeting(meetingId)!.utterances, 12);
-    const minutesPrompt = `议题：${topic}\n\n完整讨论记录：\n${allHistory}\n\n请输出 Markdown 会议纪要，包含：## 共识、## 分歧、## 建议行动`;
+    const finaleRole = joker ?? getRole(JOKER_ID);
+    if (finaleRole && meeting.participantIds.includes(JOKER_ID)) {
+      updateMeeting(meetingId, { phase: "finale" });
+      const allHistory = summarizeUtterances(getMeeting(meetingId)!.utterances, 16);
+      const finalePrompt = `议题：${topic}${evidenceBlock}\n\n全场讨论记录：\n${allHistory}\n\n请用段子手人设做终场点评：诙谐、好读，点出亮点和槽点，最后给一句收束。`;
 
-    let minutes = "";
-    const minutesId = uid();
-    yield {
-      type: "turn_start",
-      utteranceId: minutesId,
-      roleId: host.id,
-      roleName: host.name,
-      modelLabel: host.modelLabel,
-      round: meeting.maxRounds + 1,
-      phase: "minutes",
-    };
-
-    try {
-      for await (const delta of streamCompletion({
-        role: host,
-        messages: messagesWithSystem(host, minutesPrompt),
-        stream: true,
-        maxTokens: 3072,
+      for await (const chunk of emitStream(finaleRole, finalePrompt, {
+        phase: "finale",
+        round: meeting.maxRounds + 1,
       })) {
-        minutes += delta;
-        yield { type: "turn_delta", utteranceId: minutesId, delta };
+        yield chunk.event;
+        if (chunk.utterance) {
+          const m = getMeeting(meetingId)!;
+          updateMeeting(meetingId, { utterances: [...m.utterances, chunk.utterance] });
+        }
       }
-    } catch {
-      minutes = await completeText({
-        role: host,
-        messages: messagesWithSystem(host, minutesPrompt),
-        maxTokens: 3072,
-      });
-      if (minutes) yield { type: "turn_delta", utteranceId: minutesId, delta: minutes };
     }
 
-    yield { type: "turn_end", utteranceId: minutesId, content: minutes };
-    yield { type: "minutes", content: minutes };
-
-    updateMeeting(meetingId, {
-      phase: "done",
-      minutes,
-      utterances: [
-        ...getMeeting(meetingId)!.utterances,
-        {
-          id: minutesId,
-          roleId: host.id,
-          roleName: host.name,
-          modelLabel: host.modelLabel,
-          provider: host.provider,
-          phase: "minutes",
-          round: meeting.maxRounds + 1,
-          content: minutes,
-          timestamp: Date.now(),
-        },
-      ],
-    });
+    updateMeeting(meetingId, { phase: "done" });
     yield { type: "done" };
   } catch (e) {
     const message = e instanceof Error ? e.message : "会议执行失败";

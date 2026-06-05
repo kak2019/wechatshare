@@ -77,7 +77,7 @@ const mdComponents: Components = {
 
 type BubbleMarkdownProps = {
   content: string;
-  variant?: "default" | "evidence" | "host" | "minutes";
+  variant?: "default" | "evidence" | "host" | "finale";
   streaming?: boolean;
 };
 
@@ -97,7 +97,7 @@ export function BubbleMarkdown({ content, variant = "default", streaming }: Bubb
     <div
       className={[
         "tuanzi-md break-words",
-        variant === "minutes" ? "tuanzi-md--minutes" : "",
+        variant === "finale" ? "tuanzi-md--finale" : "",
         variant === "evidence" ? "tuanzi-md--evidence" : "",
       ].join(" ")}
     >
