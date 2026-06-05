@@ -23,7 +23,7 @@ export type MeetingPhase =
   | "host_open"
   | "round1"
   | "round2"
-  | "minutes"
+  | "finale"
   | "done"
   | "error";
 
@@ -46,7 +46,6 @@ export type Meeting = {
   maxRounds: number;
   phase: MeetingPhase;
   evidencePack: string;
-  minutes: string;
   utterances: Utterance[];
   error?: string;
   createdAt: number;
@@ -60,7 +59,6 @@ export type SseEvent =
   | { type: "turn_start"; utteranceId: string; roleId: string; roleName: string; modelLabel: string; round: number; phase: string }
   | { type: "turn_delta"; utteranceId: string; delta: string }
   | { type: "turn_end"; utteranceId: string; content: string }
-  | { type: "minutes"; content: string }
   | { type: "error"; message: string }
   | { type: "done" };
 

@@ -518,14 +518,13 @@ export const TUANZI_PAGE = {
   eyebrow: "多智能体圆桌",
   title: "团子圆桌",
   subtitle:
-    "角色用 Markdown 定义，引擎加载执行，前端只负责渲染。议题先由小米 MiMo 联网检索，再由各模型席位讨论，团子主持并整理纪要。",
+    "角色用 Markdown 定义，引擎加载执行，前端只负责渲染。先联网检索，再圆桌讨论，最后由段子手诙谐点评。",
   seatsLabel: "圆桌席位（可多选分析席）",
   topicLabel: "今天要讨论什么？",
   topicPlaceholder: "例如：周末去哪玩、要不要换手机、学习计划怎么定……",
   start: "开始圆桌",
   running: "会议进行中…",
   transcript: "会议实录",
-  minutesTitle: "团子纪要 ▾",
   noKeyHint:
     "尚未配置模型 API Key。请在服务器设置 MIMO_API_KEY、SILICONFLOW_API_KEY、DEEPSEEK_API_KEY（见 .env.example）。",
 } as const;

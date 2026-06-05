@@ -20,6 +20,16 @@
 
 正文 Markdown = 注入模型的 system prompt。
 
+## 示例角色
+
+| 文件 | 说明 |
+|------|------|
+| `tuanzi.md` | 主持人，仅开场 |
+| `mimo-scout.md` | 联网检索（Phase0） |
+| `glm-analyst.md` | 分析席 |
+| `deepthinker.md` | 分析席 |
+| `duanzishou.md` | 终场诙谐点评（finale） |
+
 ## 环境变量
 
 见仓库根目录 `.env.example`。

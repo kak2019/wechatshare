@@ -19,12 +19,13 @@ export type BubbleMessage = {
   streaming?: boolean;
   isHost?: boolean;
   isEvidence?: boolean;
+  isFinale?: boolean;
 };
 
 function phaseLabel(phase: string, round: number): string {
   if (phase === "evidence") return "联网资料";
   if (phase === "host_open") return "开场";
-  if (phase === "minutes") return "会议纪要";
+  if (phase === "finale") return "终场点评";
   if (phase === "round1") return `第 ${round} 轮`;
   if (phase === "round2") return `第 ${round} 轮`;
   return phase;
@@ -34,38 +35,55 @@ function bubbleShell(msg: BubbleMessage, align: "left" | "right" | "center") {
   if (msg.isEvidence) {
     return {
       wrap: "max-w-[min(100%,36rem)]",
-      card: "border border-sky-200/90 bg-gradient-to-br from-sky-50/95 via-white to-sky-50/40 shadow-[0_8px_30px_rgba(56,189,248,0.12)]",
-      tail: align === "center" ? "" : "",
+      card: "border border-sky-200/90 bg-gradient-to-br from-sky-50/95 via-white to-sky-50/40 shadow-[0_10px_32px_rgba(56,189,248,0.14)]",
+      tail: "",
+    };
+  }
+  if (msg.isFinale) {
+    return {
+      wrap: "max-w-[min(100%,36rem)]",
+      card: "border border-fuchsia-200/90 bg-gradient-to-br from-fuchsia-50/90 via-white to-purple-50/40 shadow-[0_10px_32px_rgba(232,121,249,0.16)]",
+      tail: "",
     };
   }
   if (msg.isHost) {
     return {
       wrap: "max-w-[min(100%,34rem)]",
-      card: "border border-amber-200/90 bg-gradient-to-br from-amber-50/95 via-[#fff9eb] to-amber-100/50 shadow-[0_8px_28px_rgba(255,201,60,0.18)]",
+      card: "border border-amber-200/90 bg-gradient-to-br from-amber-50/95 via-[#fff9eb] to-amber-100/50 shadow-[0_10px_30px_rgba(255,201,60,0.18)]",
       tail: "",
     };
   }
   if (align === "right") {
     return {
       wrap: "max-w-[min(100%,32rem)]",
-      card: "border border-stone-200/60 bg-gradient-to-br from-white via-white to-stone-50/80 shadow-[0_6px_24px_rgba(28,25,23,0.06)]",
+      card: "border border-stone-200/55 bg-gradient-to-br from-white via-white to-stone-50/90 shadow-[0_8px_28px_rgba(28,25,23,0.07)]",
       tail: "rounded-tr-md",
     };
   }
   return {
     wrap: "max-w-[min(100%,32rem)]",
-    card: "border border-stone-200/70 bg-gradient-to-br from-[#fffdf8] via-white to-amber-50/30 shadow-[0_6px_24px_rgba(28,25,23,0.05)]",
+    card: "border border-stone-200/65 bg-gradient-to-br from-[#fffdf8] via-white to-amber-50/35 shadow-[0_8px_28px_rgba(28,25,23,0.06)]",
     tail: "rounded-tl-md",
   };
 }
 
 export function UtteranceBubble({ msg, index }: { msg: BubbleMessage; index: number }) {
   const align: "left" | "right" | "center" =
-    msg.isHost || msg.isEvidence ? "center" : index % 2 === 0 ? "left" : "right";
+    msg.isHost || msg.isEvidence || msg.isFinale
+      ? "center"
+      : index % 2 === 0
+        ? "left"
+        : "right";
   const accent = msg.accent ?? "#ffc93c";
   const shell = bubbleShell(msg, align);
 
-  const variant = msg.isEvidence ? "evidence" : msg.isHost ? "host" : "default";
+  const variant = msg.isEvidence
+    ? "evidence"
+    : msg.isFinale
+      ? "finale"
+      : msg.isHost
+        ? "host"
+        : "default";
 
   return (
     <motion.article
@@ -80,7 +98,7 @@ export function UtteranceBubble({ msg, index }: { msg: BubbleMessage; index: num
     >
       <div
         className="relative shrink-0 overflow-hidden rounded-full shadow-md ring-2 ring-white"
-        style={{ width: 48, height: 48, boxShadow: `0 4px 14px ${accent}33` }}
+        style={{ width: 48, height: 48, boxShadow: `0 4px 16px ${accent}40` }}
       >
         {msg.avatar?.endsWith(".png") || msg.avatar?.endsWith(".jpg") ? (
           <Image src={msg.avatar} alt="" width={48} height={48} className="object-cover" />
@@ -105,20 +123,25 @@ export function UtteranceBubble({ msg, index }: { msg: BubbleMessage; index: num
       <div className={[shell.wrap, "min-w-0 flex-1 sm:flex-none"].join(" ")}>
         <div
           className={[
-            "relative overflow-hidden rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4",
+            "relative overflow-hidden rounded-2xl px-4 py-3.5 sm:rounded-3xl sm:px-5 sm:py-4",
             shell.card,
             shell.tail,
           ].join(" ")}
         >
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-            style={{ background: `linear-gradient(90deg, transparent, ${accent}55, transparent)` }}
+            className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-70"
+            style={{ background: `linear-gradient(90deg, transparent, ${accent}66, transparent)` }}
           />
 
-          <header className="mb-2.5 flex flex-wrap items-center gap-2 border-b border-stone-200/50 pb-2">
+          <header className="mb-3 flex flex-wrap items-center gap-2 border-b border-stone-200/45 pb-2.5">
             {msg.isEvidence && (
               <span className="text-xs" aria-hidden>
                 📡
+              </span>
+            )}
+            {msg.isFinale && (
+              <span className="text-xs" aria-hidden>
+                ✨
               </span>
             )}
             <span className="text-sm font-semibold tracking-tight text-stone-900">{msg.roleName}</span>

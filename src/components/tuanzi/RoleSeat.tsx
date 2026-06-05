@@ -50,9 +50,9 @@ export function RoleSeat({
       }
       transition={active ? { duration: 1.4, repeat: Infinity } : undefined}
       className={[
-        "flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors",
+        "flex flex-col items-center gap-2 rounded-xl border p-2.5 text-center transition-all duration-200",
         selected
-          ? "border-amber-400/80 bg-amber-50/80"
+          ? "border-amber-400/70 bg-amber-50/90 shadow-sm"
           : "border-stone-200/60 bg-white/60",
         disabled ? "opacity-50 cursor-not-allowed" : clickable ? "cursor-pointer" : "",
         !role.configured && role.id !== "tuanzi" ? "opacity-60" : "",

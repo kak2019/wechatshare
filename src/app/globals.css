@@ -93,9 +93,14 @@ html[data-night="true"] body {
   background: rgb(224 242 254 / 0.45);
 }
 
-.tuanzi-md--minutes h4,
-.tuanzi-md--minutes h3 {
+.tuanzi-md--finale h4,
+.tuanzi-md--finale h3 {
   color: rgb(120 53 15 / 0.85);
+}
+
+.tuanzi-md--finale blockquote {
+  border-left-color: rgb(232 121 249 / 0.55);
+  background: rgb(250 232 255 / 0.5);
 }
 
 .tuanzi-md p:only-child {

@@ -39,6 +39,7 @@ function upsertMessage(list: BubbleMessage[], patch: Partial<BubbleMessage> & { 
         streaming: patch.streaming,
         isHost: patch.isHost,
         isEvidence: patch.isEvidence,
+        isFinale: patch.isFinale,
       },
     ];
   }
@@ -92,11 +93,9 @@ export function RoundtableClient() {
   const [topic, setTopic] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [messages, setMessages] = useState<BubbleMessage[]>([]);
-  const [minutes, setMinutes] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeRoleId, setActiveRoleId] = useState<string | null>(null);
-  const [minutesOpen, setMinutesOpen] = useState(true);
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -112,8 +111,12 @@ export function RoundtableClient() {
       setConfig(cfg);
       if (roles.ok) {
         setRolesData(roles);
-        const defaults = roles.roles.filter((r) => r.configured).map((r) => r.id);
-        setSelected(new Set(defaults.slice(0, 2)));
+        const preferred = ["glm-analyst", "deepthinker", "duanzishou"];
+        const defaults = roles.roles
+          .filter((r) => r.configured && preferred.includes(r.id))
+          .map((r) => r.id);
+        const fallback = roles.roles.filter((r) => r.configured).map((r) => r.id).slice(0, 3);
+        setSelected(new Set(defaults.length > 0 ? defaults : fallback));
       }
     })();
     return () => {
@@ -193,6 +196,7 @@ export function RoundtableClient() {
             content: "",
             streaming: true,
             isHost: event.roleId === host?.id,
+            isFinale: event.phase === "finale",
             avatar: seat?.avatar,
             accent: seat?.accent,
           }),
@@ -220,10 +224,6 @@ export function RoundtableClient() {
         setActiveRoleId(null);
         return;
       }
-      if (event.type === "minutes") {
-        setMinutes(event.content);
-        return;
-      }
       if (event.type === "error") {
         setError(event.message);
         setRunning(false);
@@ -241,7 +241,6 @@ export function RoundtableClient() {
     if (!topic.trim() || selected.size < 1) return;
     setError(null);
     setMessages([]);
-    setMinutes("");
     setRunning(true);
 
     const res = await fetch("/api/tuanzi/meeting", {
@@ -288,7 +287,7 @@ export function RoundtableClient() {
       top: panel.scrollHeight,
       behavior: prefersReduced ? "auto" : "smooth",
     });
-  }, [messages, minutes]);
+  }, [messages]);
 
   const controlPanel = (
     <>
@@ -396,28 +395,6 @@ export function RoundtableClient() {
           <p className="text-sm text-stone-400">开始圆桌后，讨论将在这里逐条显示</p>
         </div>
       )}
-
-      {minutes && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-[#fff9eb] p-5 shadow-[0_10px_40px_rgba(255,201,60,0.12)] sm:p-6 lg:mt-8"
-        >
-          <button
-            type="button"
-            className="flex w-full items-center justify-between text-left text-sm font-semibold text-amber-900/90"
-            onClick={() => setMinutesOpen((o) => !o)}
-          >
-            <span>{TUANZI_PAGE.minutesTitle}</span>
-            <span className="text-xs text-amber-700/60">{minutesOpen ? "收起" : "展开"}</span>
-          </button>
-          {minutesOpen && (
-            <div className="mt-4 border-t border-amber-200/60 pt-4">
-              <BubbleMarkdown content={minutes} variant="minutes" />
-            </div>
-          )}
-        </motion.div>
-      )}
     </>
   );
 
@@ -441,7 +418,7 @@ export function RoundtableClient() {
           className={[
             "flex min-h-0 min-w-0 flex-1 flex-col",
             "lg:overflow-hidden lg:rounded-2xl lg:border lg:border-stone-200/70",
-            "lg:bg-[#fffdf8]/90 lg:shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]",
+            "lg:bg-[#fffcf7]/95 lg:shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_4px_24px_rgba(28,25,23,0.04)]",
           ].join(" ")}
         >
           <div
