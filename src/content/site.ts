@@ -36,6 +36,10 @@ export const SITE_META = {
     title: "羊了个羊｜我俩的时光",
     description: "叠牌三消小游戏 — 登录云存档，挑战排行榜。",
   },
+  breakout: {
+    title: "圆环打砖块｜我俩的时光",
+    description: "像素复古圆环打砖块 — 无限关卡，本地单机。",
+  },
   tuanzi: {
     title: "团子圆桌｜我俩的时光",
     description: "多智能体圆桌 — Markdown 定义角色，先联网再讨论。",
@@ -75,6 +79,7 @@ export const NAV = {
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
     { href: "/game/yanglegeyang", label: "羊羊" },
+    { href: "/game/breakout", label: "打砖块" },
     { href: "/tuanzi", label: "团子" },
   ],
   timeMenu: [
@@ -95,6 +100,7 @@ export const FOOTER = {
     { href: "/library", label: "影视库" },
     { href: "/fish", label: "钓鱼" },
     { href: "/game/yanglegeyang", label: "羊羊" },
+    { href: "/game/breakout", label: "打砖块" },
     { href: "/tuanzi", label: "团子" },
   ],
   icp: "津ICP备2021004849号-2",
