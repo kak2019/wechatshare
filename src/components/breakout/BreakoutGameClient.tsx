@@ -14,39 +14,39 @@ import {
   togglePause,
 } from "@/lib/breakout/engine";
 import { renderGame, renderOverlay } from "@/lib/breakout/render";
-import { loadSave, persistSave } from "@/lib/breakout/storage";
+import { createDefaultSave, loadSave, persistSave } from "@/lib/breakout/storage";
 import type { BreakoutSave, BreakoutState } from "@/lib/breakout/types";
 
 function formatScore(n: number) {
   return n.toLocaleString("zh-CN");
 }
 
+function applyState(
+  next: BreakoutState,
+  setGame: (g: BreakoutState) => void,
+  stateRef: React.MutableRefObject<BreakoutState | null>,
+) {
+  stateRef.current = next;
+  setGame(next);
+}
+
 export function BreakoutGameClient() {
-  const [game, setGame] = useState<BreakoutState | null>(null);
-  const [save, setSave] = useState<BreakoutSave | null>(null);
+  const [game, setGame] = useState<BreakoutState>(() => createGame(1));
+  const [save, setSave] = useState<BreakoutSave>(() => createDefaultSave());
   const [portraitOnly, setPortraitOnly] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const stateRef = useRef<BreakoutState | null>(null);
+  const stateRef = useRef<BreakoutState>(game);
   const saveRef = useRef<BreakoutSave | null>(null);
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const s = loadSave();
-    const g = createGame(1);
     saveRef.current = s;
-    stateRef.current = g;
-    const id = requestAnimationFrame(() => {
-      setSave(s);
-      setGame(g);
-    });
+    const id = requestAnimationFrame(() => setSave(s));
     return () => cancelAnimationFrame(id);
   }, []);
-
-  useEffect(() => {
-    stateRef.current = game;
-  }, [game]);
 
   useEffect(() => {
     saveRef.current = save;
@@ -78,21 +78,19 @@ export function BreakoutGameClient() {
   }, []);
 
   const handleStart = useCallback(() => {
-    setGame((prev) => {
-      if (!prev) return prev;
-      const next = startPlaying(prev);
-      stateRef.current = next;
-      return next;
-    });
+    const state = stateRef.current;
+    if (!state || state.phase !== "ready") return;
+    applyState(startPlaying(state), setGame, stateRef);
   }, []);
 
   const handlePause = useCallback(() => {
-    setGame((prev) => {
-      if (!prev) return prev;
-      const next = togglePause(prev);
-      stateRef.current = next;
-      return next;
-    });
+    const state = stateRef.current;
+    if (!state) return;
+    applyState(togglePause(state), setGame, stateRef);
+  }, []);
+
+  const handleRestart = useCallback(() => {
+    applyState(startPlaying(createGame(1)), setGame, stateRef);
   }, []);
 
   const handlePointer = useCallback((clientX: number) => {
@@ -101,9 +99,7 @@ export function BreakoutGameClient() {
     if (!canvas || !state) return;
     const rect = canvas.getBoundingClientRect();
     const x = pointerToGameX(state, clientX, rect);
-    const next = setPaddleX(state, x);
-    stateRef.current = next;
-    setGame(next);
+    applyState(setPaddleX(state, x), setGame, stateRef);
   }, []);
 
   const handleTap = useCallback(() => {
@@ -111,29 +107,21 @@ export function BreakoutGameClient() {
     if (!state) return;
 
     if (state.phase === "gameOver") {
-      const g = createGame(1);
-      const next = startPlaying(g);
-      stateRef.current = next;
-      setGame(next);
+      handleRestart();
       return;
     }
-
     if (state.phase === "ready") {
       handleStart();
       return;
     }
-
     if (state.phase === "paused") {
       handlePause();
       return;
     }
-
     if (state.ballAttached && state.phase === "playing") {
-      const next = launchBall(state);
-      stateRef.current = next;
-      setGame(next);
+      applyState(launchBall(state), setGame, stateRef);
     }
-  }, [handlePause, handleStart]);
+  }, [handlePause, handleRestart, handleStart]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -146,8 +134,10 @@ export function BreakoutGameClient() {
     };
 
     const onPointerDown = (e: PointerEvent) => {
+      e.preventDefault();
       handleTap();
-      if (stateRef.current?.phase === "playing" || stateRef.current?.phase === "paused") {
+      const state = stateRef.current;
+      if (state?.phase === "playing" || state?.phase === "paused") {
         handlePointer(e.clientX);
       }
     };
@@ -158,7 +148,7 @@ export function BreakoutGameClient() {
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [handlePointer, handleTap]);
+  }, [handlePointer, handleTap, game.size]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -172,14 +162,10 @@ export function BreakoutGameClient() {
       if (state.phase !== "playing" && state.phase !== "paused") return;
       const step = 18;
       if (e.key === "ArrowLeft") {
-        const next = setPaddleX(state, state.paddle.x - step);
-        stateRef.current = next;
-        setGame(next);
+        applyState(setPaddleX(state, state.paddle.x - step), setGame, stateRef);
       }
       if (e.key === "ArrowRight") {
-        const next = setPaddleX(state, state.paddle.x + step);
-        stateRef.current = next;
-        setGame(next);
+        applyState(setPaddleX(state, state.paddle.x + step), setGame, stateRef);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -192,6 +178,7 @@ export function BreakoutGameClient() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    lastTimeRef.current = 0;
     let hudTick = 0;
 
     const draw = (now: number) => {
@@ -211,7 +198,7 @@ export function BreakoutGameClient() {
       stateRef.current = next;
 
       hudTick += 1;
-      if (hudTick % 4 === 0 || next.phase !== state.phase) {
+      if (hudTick % 6 === 0 || next.phase !== state.phase) {
         setGame(next);
       }
 
@@ -242,12 +229,12 @@ export function BreakoutGameClient() {
 
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [commitSave]);
+  }, [commitSave, game.size]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
     const canvas = canvasRef.current;
-    if (!wrap || !canvas || !game) return;
+    if (!wrap || !canvas) return;
 
     const resize = () => {
       const w = wrap.clientWidth;
@@ -258,25 +245,16 @@ export function BreakoutGameClient() {
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
     return () => ro.disconnect();
-  }, [game]);
+  }, []);
 
   const toggleSound = () => {
     setSave((prev) => {
-      if (!prev) return prev;
       const next = { ...prev, soundOn: !prev.soundOn };
       persistSave(next);
       saveRef.current = next;
       return next;
     });
   };
-
-  if (!game || !save) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-sm text-[var(--mute)]">
-        加载中…
-      </div>
-    );
-  }
 
   return (
     <GameShell>
@@ -294,10 +272,7 @@ export function BreakoutGameClient() {
         <p className="mt-1 text-xs text-[var(--mute)]">{BREAKOUT_PAGE.subtitle}</p>
       </header>
 
-      <div
-        ref={wrapRef}
-        className="mx-auto w-full max-w-[400px] flex-1 min-h-0"
-      >
+      <div ref={wrapRef} className="mx-auto w-full max-w-[400px] flex-1 min-h-0">
         <canvas
           ref={canvasRef}
           width={game.size}
@@ -339,16 +314,7 @@ export function BreakoutGameClient() {
         ) : (
           <button
             type="button"
-            onClick={() => {
-              if (game.phase === "gameOver") {
-                const g = createGame(1);
-                const next = startPlaying(g);
-                stateRef.current = next;
-                setGame(next);
-              } else {
-                handleStart();
-              }
-            }}
+            onClick={game.phase === "gameOver" ? handleRestart : handleStart}
             className="flex-1 rounded-lg border border-[#ffd93d] bg-[#2d1f3d] px-3 py-2 font-mono text-sm font-bold text-[#ffd93d] active:scale-95"
           >
             {game.phase === "gameOver" ? BREAKOUT_PAGE.restart : BREAKOUT_PAGE.start}
