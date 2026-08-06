@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { EASTER_EGGS } from "@/content/site";
@@ -25,9 +24,6 @@ const HEART_EMOJIS = ["❤", "💖", "💗", "💝", "💕", "✨", "🌟"];
  *     22:00 - 06:00 默认进入夜间模式
  */
 export function GlobalEasterEggs() {
-  const pathname = usePathname();
-  const hideChrome = pathname.startsWith("/game/soviet-revival");
-
   const [hearts, setHearts] = useState<Heart[]>([]);
   const [night, setNight] = useState<boolean | null>(null);
 
@@ -73,7 +69,6 @@ export function GlobalEasterEggs() {
 
   // 双击爱心烟花
   useEffect(() => {
-    if (hideChrome) return;
     function onDouble(e: MouseEvent) {
       const x = e.clientX;
       const y = e.clientY;
@@ -98,9 +93,7 @@ export function GlobalEasterEggs() {
     }
     window.addEventListener("dblclick", onDouble);
     return () => window.removeEventListener("dblclick", onDouble);
-  }, [hideChrome]);
-
-  if (hideChrome) return null;
+  }, []);
 
   return (
     <>
