@@ -7,7 +7,9 @@
  *  均在此配置。组件只负责布局与动效，不再写死中文文案。
  */
 
-/** 人物昵称（全站复用） */
+/** 人物昵称（全站复用）
+ *  me = 一二（女方）  you = 布布（男方）
+ */
 export const COUPLE = {
   me: "一二",
   you: "布布",
@@ -244,9 +246,13 @@ export const LIBRARY_PAGE = {
   eyebrow: "Emby · Private Theater",
   heading: "只属于我俩的",
   headingAccent: "放映厅",
-  body: "把 Emby 影视库嵌在这个小站里：像手帐里夹一张电影票根——点开就能继续上次没看完的那集。",
-  iframeTitle: "Emby 私人影视库",
-  openExternal: "新窗口打开 Emby",
+  body: "从私人 Emby 里抽出最新海报墙——点海报即可在站内播放，不用再登录。",
+  openExternal: "打开完整 Emby",
+  loading: "正在铺开海报墙…",
+  playHint: "点击播放",
+  playBufferHint: "首次起播需要转码缓冲几秒，请稍等。",
+  closePlayer: "关闭",
+  openInEmby: "在 Emby 里打开",
 } as const;
 
 /** 彩蛋与无障碍文案 */
@@ -257,24 +263,57 @@ export const EASTER_EGGS = {
   lineDogBubble: "汪～你被发现啦 🐾",
 } as const;
 
-/** 在一起周年倒计时标签，`{years}` 为年数 */
+/** 在一起周年文案，`{years}` 由起始日自动算出 */
 export const ANNIVERSARY_YEAR_LABEL = "在一起 {years} 周年";
 
-export const RELATIONSHIP_START = "2022-05-20T00:00:00+08:00";
+/** 整百日 / 里程碑文案，`{days}` 自动填入 */
+export const DAY_MILESTONE_LABEL = "在一起 {days} 天";
+
+/**
+ * 在一起的起始时刻（唯一需要配的「在一起」日期）
+ * 在一起天数、N 周年、整百日里程碑都会据此自动计算
+ */
+export const RELATIONSHIP_START = "2023-09-04T00:00:00+08:00";
+
+/**
+ * 重要日期（先存着，页面要展示时直接引用）
+ * - together：在一起（与 RELATIONSHIP_START 同一天）
+ * - marriage：领证
+ */
+export const IMPORTANT_DATES = {
+  together: "2023-09-04",
+  marriage: "2026-06-23",
+} as const;
+
+/**
+ * 自动参与倒数的天数里程碑（超过当前天数的下一个会出现在「下一个纪念日」）
+ * 一般不用改；想加 520 / 1314 等直接往数组里加数字即可
+ */
+export const DAY_MILESTONES = [
+  100, 200, 300, 365, 500, 520, 666, 777, 888, 999, 1000, 1200, 1314, 1500,
+  2000, 2500, 3000,
+] as const;
 
 export type Anniversary = {
-  /** ISO 日期。年份保留方便排序，每年取月日重复 */
+  /** 月日即可，写成 YYYY-MM-DD；每年按月日循环，年份只作占位 */
   date: string;
   label: string;
   emoji: string;
 };
 
+/**
+ * 额外纪念日（生日、节日等）——需要你手动写
+ * 「在一起」相关不要写在这里，改 RELATIONSHIP_START 即可自动算
+ * 领证日已写入 IMPORTANT_DATES.marriage，需要每年循环倒数时可再加到这里
+ *
+ * 生日：一二（女方 / me）2.09；布布（男方 / you）10.29
+ */
 export const ANNIVERSARIES: Anniversary[] = [
-  { date: "2022-05-20", label: "在一起的那一天", emoji: "💞" },
-  { date: "2022-12-24", label: "第一个平安夜", emoji: "🎄" },
-  { date: "2023-02-14", label: "情人节", emoji: "🌹" },
-  { date: "2023-08-08", label: "你的生日", emoji: "🎂" },
-  { date: "2023-11-11", label: "我的生日", emoji: "🍰" },
+  { date: "2023-12-24", label: "平安夜", emoji: "🎄" },
+  { date: "2024-02-14", label: "情人节", emoji: "🌹" },
+  { date: "2000-02-09", label: "一二的生日", emoji: "🎂" },
+  { date: "2000-10-29", label: "布布的生日", emoji: "🍰" },
+  { date: "2026-06-23", label: "领证纪念日", emoji: "💍" },
 ];
 
 export type TimelineNode = {
@@ -286,46 +325,28 @@ export type TimelineNode = {
 
 export const TIMELINE: TimelineNode[] = [
   {
-    date: "2022.05.20",
-    title: "走进彼此",
-    body: "在那条人来人往的小街上，第一次正经地说出「以后请多指教」。",
+    date: "2023.09.03",
+    title: "初次见面",
+    body: "走进彼此的那一天，故事从这里起笔。",
     emoji: "🌱",
   },
   {
-    date: "2022.07.16",
+    date: "2025.10.01",
     title: "第一次旅行",
-    body: "海边吹着风，你说我笑起来眼睛会弯成月牙。",
+    body: "第一次真正把日子交给远方，和对方。",
     emoji: "🌊",
   },
   {
-    date: "2022.12.24",
-    title: "雪夜的小屋",
-    body: "暖气、热可可、还有不太合拍的圣诞歌。",
-    emoji: "🎄",
+    date: "2026.04.30",
+    title: "山西自驾之旅",
+    body: "方向盘、公路、和一路并肩的风景。",
+    emoji: "🚗",
   },
   {
-    date: "2023.05.20",
-    title: "一周年纪念",
-    body: "一束没拆封的信和一蛋糕的奶油花。",
-    emoji: "💌",
-  },
-  {
-    date: "2023.10.01",
-    title: "国庆长假",
-    body: "把日程排得满满的，又突然全部推翻，赖在家里看了三部电影。",
-    emoji: "🍿",
-  },
-  {
-    date: "2024.02.14",
-    title: "第二次情人节",
-    body: "一起做了寿喜烧，灶上的蒸汽里有你。",
-    emoji: "🍲",
-  },
-  {
-    date: "2024.05.20",
-    title: "两周年",
-    body: "我们说，把日子过成手帐吧，于是有了这个网站。",
-    emoji: "📖",
+    date: "2026.06.23",
+    title: "缘定此生",
+    body: "领证这一天，把喜欢写成确定。",
+    emoji: "💍",
   },
 ];
 
@@ -396,30 +417,30 @@ export type Track = {
 export const PLAYLIST: Track[] = [
   {
     id: "t1",
-    title: "小情歌",
-    artist: "苏打绿",
-    lyric: "这是一首简单的小情歌，唱着人们心肠的曲折…",
+    title: "童话镇",
+    artist: "陈一发儿",
+    lyric: "听说白雪公主在逃跑，小红帽有修改了童话故事结局…",
     vinyl: ["#1d1d1f", "#3a2f2a"],
   },
   {
     id: "t2",
-    title: "晴天",
-    artist: "周杰伦",
-    lyric: "从前从前有个人爱你很久，但偏偏风渐渐把距离吹得好远…",
+    title: "1000x",
+    artist: "Jarryd James",
+    lyric: "I would love you 1000x more…",
     vinyl: ["#3a2f2a", "#8a6a2f"],
   },
   {
     id: "t3",
-    title: "玫瑰少年",
-    artist: "蔡依林",
-    lyric: "永志不忘记念著那温柔，绽放着鲜艳的传说…",
+    title: "椿",
+    artist: "沈以诚",
+    lyric: "想带你去看春暖花开，想带你去看海…",
     vinyl: ["#7c2d12", "#f43f5e"],
   },
   {
     id: "t4",
-    title: "夜空中最亮的星",
-    artist: "逃跑计划",
-    lyric: "夜空中最亮的星，能否听清，那仰望的人，心底的孤独和叹息…",
+    title: "今天也想见到你",
+    artist: "小蓝背心",
+    lyric: "今天也想见到你，把喜欢都藏在眼睛里…",
     vinyl: ["#1e1b4b", "#312e81"],
   },
 ];

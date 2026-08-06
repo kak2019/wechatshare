@@ -1,25 +1,34 @@
 import type { Metadata } from "next";
 
 import { EmbyLibraryClient } from "@/components/library/EmbyLibraryClient";
-import { SITE_META } from "@/content/site";
-
-const DEFAULT_EMBY_URL = "http://app.flynt.top:8096";
-
-function normalizeEmbUrl(raw?: string): string {
-  const fromEnv = raw?.trim();
-  const base = fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_EMBY_URL;
-  if (/^https?:\/\//i.test(base)) {
-    return base;
-  }
-  return `http://${base}`;
-}
+import {
+  fetchEmbyPosterWall,
+  getEmbyOpenHomeUrl,
+  type EmbyWallItem,
+} from "@/lib/emby/client";
 
 export const metadata: Metadata = {
   title: "放映厅｜我俩的时光",
   description: "和喜欢的人一起打开 Emby 私人影视库。",
 };
 
-export default function LibraryPage() {
-  const embyUrl = normalizeEmbUrl(process.env.NEXT_PUBLIC_EMBY_URL);
-  return <EmbyLibraryClient embyUrl={embyUrl} />;
+export const dynamic = "force-dynamic";
+
+export default async function LibraryPage() {
+  let items: EmbyWallItem[] = [];
+  let error: string | null = null;
+
+  try {
+    items = await fetchEmbyPosterWall(24);
+  } catch (err) {
+    error = err instanceof Error ? err.message : "暂时连不上放映厅";
+  }
+
+  return (
+    <EmbyLibraryClient
+      initialItems={items}
+      openHomeUrl={getEmbyOpenHomeUrl()}
+      initialError={error}
+    />
+  );
 }
