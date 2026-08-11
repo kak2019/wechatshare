@@ -1,16 +1,11 @@
-import { createHash } from "node:crypto";
-
 import {
   buildPublicPosterUrl,
   fetchEmbyItemMeta,
-  fetchEmbyPrimaryImage,
   searchEmbyByName,
 } from "@/lib/emby/client";
 
 const DEFAULT_WEBHOOK =
   "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=636eff2e-94fd-4a5f-9bca-f89e9b94badf";
-
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
 export function getWecomWebhookUrl(): string {
   return (
@@ -36,16 +31,10 @@ export type WecomMarkdownV2Message = {
   markdown_v2: { content: string };
 };
 
-export type WecomImageMessage = {
-  msgtype: "image";
-  image: { base64: string; md5: string };
-};
-
 export type WecomMessage =
   | WecomTextMessage
   | WecomMarkdownMessage
-  | WecomMarkdownV2Message
-  | WecomImageMessage;
+  | WecomMarkdownV2Message;
 
 export type LibraryNotifyItem = {
   name: string;
@@ -83,22 +72,6 @@ export async function sendWecomMessage(
   return { ok: true, errmsg: "ok" };
 }
 
-export async function sendWecomImage(
-  body: ArrayBuffer | Buffer,
-): Promise<{ ok: boolean; errmsg: string }> {
-  let buf = Buffer.isBuffer(body) ? body : Buffer.from(body);
-  if (buf.byteLength > MAX_IMAGE_BYTES) {
-    return { ok: false, errmsg: "image too large (>2MB)" };
-  }
-  // 企微只要 JPG/PNG；Emby 偶尔给 webp，仍尝试发送
-  const base64 = buf.toString("base64");
-  const md5 = createHash("md5").update(buf).digest("hex");
-  return sendWecomMessage({
-    msgtype: "image",
-    image: { base64, md5 },
-  });
-}
-
 export async function sendWecomMarkdownV2(
   content: string,
 ): Promise<{ ok: boolean; errmsg: string }> {
@@ -108,7 +81,7 @@ export async function sendWecomMarkdownV2(
   });
 }
 
-/** 刮削入库完成通知（批量摘要，markdown_v2 + 封面） */
+/** 刮削入库完成通知：单条 markdown_v2（封面嵌在正文里，不拆成两条） */
 export async function notifyLibraryIngest(input: {
   title?: string;
   items?: Array<string | LibraryNotifyItem>;
@@ -128,15 +101,8 @@ export async function notifyLibraryIngest(input: {
     }
   }
 
-  // 补全 Emby 元数据 / 封面
   const enriched = await Promise.all(items.map((it) => enrichNotifyItem(it)));
-
-  let coversSent = 0;
-  // 先发最多 3 张封面图（企微 image 最稳），再发 markdown_v2 正文
-  for (const it of enriched.slice(0, 3)) {
-    const sent = await maybeSendCoverImage(it);
-    if (sent) coversSent += 1;
-  }
+  const covers = enriched.filter((it) => resolveCoverUrl(it)).length;
 
   const lines: string[] = [`# ${title}`, ""];
 
@@ -154,11 +120,17 @@ export async function notifyLibraryIngest(input: {
       if (cover) {
         lines.push(`![${it.name}](${cover})`);
       }
-      lines.push(`${i + 1}. **${displayName(it)}**${meta ? `（${meta}）` : ""}`);
+      lines.push(
+        `**${i + 1}. ${displayName(it)}**${meta ? `  \n${meta}` : ""}`,
+      );
       if (it.openUrl) {
-        lines.push(`   [在 Emby 打开](${it.openUrl})`);
+        lines.push(`[在 Emby 打开](${it.openUrl})`);
       }
-      lines.push("");
+      if (i < enriched.length - 1) {
+        lines.push("", "---", "");
+      } else {
+        lines.push("");
+      }
     }
   }
 
@@ -168,19 +140,20 @@ export async function notifyLibraryIngest(input: {
   lines.push(`_刮削入库通知 · ${formatNow()}_`);
 
   const result = await sendWecomMarkdownV2(lines.join("\n").trim());
-  return { ...result, covers: coversSent };
+  return { ...result, covers };
 }
 
 /** 单条新媒体通知（Emby library.new） */
 export function formatEmbyNewItemMarkdown(item: LibraryNotifyItem): string {
-  const lines = [
+  return [
     `# 仙女的浪漫小屋影业 · 新片上架`,
     "",
     ...formatSingleItemMarkdown(item),
     "",
     `_Emby 自动通知 · ${formatNow()}_`,
-  ];
-  return lines.join("\n").trim();
+  ]
+    .join("\n")
+    .trim();
 }
 
 export async function notifyEmbyNewItems(
@@ -190,9 +163,7 @@ export async function notifyEmbyNewItems(
   const enriched = await Promise.all(batch.map((it) => enrichNotifyItem(it)));
 
   if (enriched.length === 1) {
-    const one = enriched[0];
-    await maybeSendCoverImage(one);
-    return sendWecomMarkdownV2(formatEmbyNewItemMarkdown(one));
+    return sendWecomMarkdownV2(formatEmbyNewItemMarkdown(enriched[0]));
   }
 
   return notifyLibraryIngest({
@@ -209,6 +180,8 @@ function formatSingleItemMarkdown(item: LibraryNotifyItem): string[] {
     .join(" · ");
   const cover = resolveCoverUrl(item);
   const lines: string[] = [];
+
+  // 封面紧跟标题，同一条消息内展示
   if (cover) {
     lines.push(`![${item.name}](${cover})`, "");
   }
@@ -216,7 +189,12 @@ function formatSingleItemMarkdown(item: LibraryNotifyItem): string[] {
   if (meta) lines.push(meta);
   if (item.overview) {
     const brief = item.overview.replace(/\s+/g, " ").trim().slice(0, 120);
-    if (brief) lines.push("", `> ${brief}${item.overview.length > 120 ? "…" : ""}`);
+    if (brief) {
+      lines.push(
+        "",
+        `> ${brief}${item.overview.length > 120 ? "…" : ""}`,
+      );
+    }
   }
   if (item.openUrl) {
     lines.push("", `[在 Emby 打开](${item.openUrl})`);
@@ -278,7 +256,6 @@ async function enrichNotifyItem(
       }
     }
 
-    // 仅有片名时，去 Emby 搜封面
     const found = await searchEmbyByName(item.name);
     if (!found) return item;
     return {
@@ -298,31 +275,6 @@ async function enrichNotifyItem(
   } catch (error) {
     console.error("[wecom] enrich item failed", item.name, error);
     return item;
-  }
-}
-
-async function maybeSendCoverImage(item: LibraryNotifyItem): Promise<boolean> {
-  if (!item.embyId && !item.coverUrl) return false;
-  try {
-    let body: ArrayBuffer | null = null;
-    if (item.embyId) {
-      // 压到约 480 高，控制在 2MB 内
-      const image = await fetchEmbyPrimaryImage(item.embyId, item.imageTag, {
-        maxHeight: 480,
-        quality: 80,
-      });
-      body = image?.body ?? null;
-    }
-    if (!body) return false;
-    const result = await sendWecomImage(body);
-    if (!result.ok) {
-      console.error("[wecom] cover image failed", result.errmsg);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.error("[wecom] cover image error", error);
-    return false;
   }
 }
 

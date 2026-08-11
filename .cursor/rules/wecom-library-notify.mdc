@@ -20,7 +20,7 @@ alwaysApply: true
      -H 'Content-Type: application/json' \
      -d '{"items":[{"name":"剧名","embyId":"xxx","type":"Series"}]}'
    ```
-2. 通知格式为 **markdown_v2**（标题/列表/引用/链接），并尽量附带剧海报封面。
+2. 通知格式为 **单条 markdown_v2**（标题/列表/引用/链接，封面用 `![名](url)` 嵌在同一条里），不要拆成「先发图片再发文字」。
 3. `SITE_ORIGIN` 优先用线上 `https://flynt.top`；本地开发可用 `http://localhost:3000`。
 4. 若配置了 `NOTIFY_SECRET`，请求需带 `?secret=` 或头 `x-notify-secret`。
 5. Emby 侧也可配置 Webhook → `https://flynt.top/api/notify/emby`（New Media Added），实现库内新增时自动推送；Agent 批量整理结束后仍应再发一条摘要。
