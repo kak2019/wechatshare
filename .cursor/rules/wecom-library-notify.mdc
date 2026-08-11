@@ -1,0 +1,19 @@
+---
+description: 刮削入库完成后自动发企业微信通知，无需用户再次提醒
+globs:
+alwaysApply: true
+---
+
+# 仙女影业 · 入库通知
+
+当你（Agent）完成 **Emby 刮削 / 整理入库**（把片源从 Source 归到已整理、重命名、触发扫描等）后：
+
+1. **必须自动**调用通知接口，不要等用户再说「发个通知」：
+   ```bash
+   curl -sS -X POST "$SITE_ORIGIN/api/notify/library" \
+     -H 'Content-Type: application/json' \
+     -d '{"title":"仙女的浪漫小屋影业 · 新剧入库","items":["剧名1","剧名2"],"note":"已刮削入库"}'
+   ```
+2. `SITE_ORIGIN` 优先用线上 `https://flynt.top`；本地开发可用 `http://localhost:3000`。
+3. 若配置了 `NOTIFY_SECRET`，请求需带 `?secret=` 或头 `x-notify-secret`。
+4. Emby 侧也可配置 Webhook → `https://flynt.top/api/notify/emby`（New Media Added），实现库内新增时自动推送；Agent 批量整理结束后仍应再发一条摘要。
