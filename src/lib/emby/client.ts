@@ -183,10 +183,11 @@ export async function fetchEmbyPosterWall(limit = 24): Promise<EmbyWallItem[]> {
 export async function fetchEmbyPrimaryImage(
   itemId: string,
   tag?: string | null,
+  opts?: { maxHeight?: number; quality?: number },
 ): Promise<{ body: ArrayBuffer; contentType: string } | null> {
   const params = new URLSearchParams({
-    maxHeight: "720",
-    quality: "90",
+    maxHeight: String(opts?.maxHeight ?? 720),
+    quality: String(opts?.quality ?? 90),
   });
   if (tag) params.set("tag", tag);
 
@@ -203,6 +204,110 @@ export async function fetchEmbyPrimaryImage(
     body: await res.arrayBuffer(),
     contentType: res.headers.get("content-type") || "image/jpeg",
   };
+}
+
+/** 通知用：按 ID 取条目元数据（含海报 tag / 简介） */
+export async function fetchEmbyItemMeta(itemId: string): Promise<{
+  id: string;
+  name: string;
+  type: string;
+  year: number | null;
+  overview: string | null;
+  seriesName: string | null;
+  imageTag: string | null;
+  openUrl: string;
+} | null> {
+  try {
+    const auth = await authenticate();
+    const base = getEmbyBaseUrl();
+    const res = await embyFetch(
+      `/Users/${auth.userId}/Items/${encodeURIComponent(itemId)}?Fields=Overview,PrimaryImageAspectRatio,ProductionYear,SeriesName`,
+    );
+    if (!res.ok) return null;
+    const item = (await res.json()) as EmbyItem;
+    const wall = toWallItem(item, auth.serverId, base);
+    return {
+      id: wall.id,
+      name: wall.name,
+      type: wall.type,
+      year: wall.year,
+      overview: wall.overview,
+      seriesName: item.SeriesName ?? null,
+      imageTag: wall.imageTag,
+      openUrl: wall.openUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 按片名在 Emby 里搜电影/剧集（入库通知补封面用） */
+export async function searchEmbyByName(
+  name: string,
+  includeTypes: string[] = ["Movie", "Series"],
+): Promise<{
+  id: string;
+  name: string;
+  type: string;
+  year: number | null;
+  overview: string | null;
+  imageTag: string | null;
+  openUrl: string;
+} | null> {
+  const q = name.trim();
+  if (!q) return null;
+  try {
+    const auth = await authenticate();
+    const base = getEmbyBaseUrl();
+    const params = new URLSearchParams({
+      SearchTerm: q,
+      Recursive: "true",
+      IncludeItemTypes: includeTypes.join(","),
+      Fields: "Overview,PrimaryImageAspectRatio,ProductionYear",
+      Limit: "8",
+    });
+    const res = await embyFetch(
+      `/Users/${auth.userId}/Items?${params.toString()}`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { Items?: EmbyItem[] };
+    const items = data.Items || [];
+    if (!items.length) return null;
+
+    const lower = q.toLowerCase();
+    const exact =
+      items.find((it) => it.Name?.toLowerCase() === lower) ||
+      items.find((it) => it.Name?.toLowerCase().includes(lower)) ||
+      items[0];
+    const wall = toWallItem(exact, auth.serverId, base);
+    return {
+      id: wall.id,
+      name: wall.name,
+      type: wall.type,
+      year: wall.year,
+      overview: wall.overview,
+      imageTag: wall.imageTag,
+      openUrl: wall.openUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 站点公网海报代理地址（企微 markdown_v2 可嵌图） */
+export function buildPublicPosterUrl(
+  itemId: string,
+  tag?: string | null,
+  siteOrigin?: string,
+): string {
+  const origin = (
+    siteOrigin ||
+    process.env.SITE_ORIGIN?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_ORIGIN?.trim() ||
+    "https://flynt.top"
+  ).replace(/\/$/, "");
+  const qs = tag ? `?tag=${encodeURIComponent(tag)}` : "";
+  return `${origin}/api/emby/image/${encodeURIComponent(itemId)}${qs}`;
 }
 
 function browserHeaders(token: string): Record<string, string> {
