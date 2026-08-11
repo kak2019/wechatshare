@@ -46,7 +46,22 @@ jobs:
             BRANCH="${{ secrets.GIT_BRANCH }}"
             if [ -z "$BRANCH" ]; then BRANCH="main"; fi
             cd "$DEPLOY_PATH"
-            git fetch origin "$BRANCH"
+
+            # 服务器偶发连不上 GitHub（Empty reply），重试几次
+            fetch_ok=0
+            for i in 1 2 3 4 5; do
+              if git fetch origin "$BRANCH"; then
+                fetch_ok=1
+                break
+              fi
+              echo "git fetch failed (attempt $i), retry in $((i * 5))s..."
+              sleep $((i * 5))
+            done
+            if [ "$fetch_ok" -ne 1 ]; then
+              echo "git fetch failed after retries"
+              exit 1
+            fi
+
             git checkout "$BRANCH"
             git reset --hard "origin/$BRANCH"
             npm ci
