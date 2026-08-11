@@ -160,3 +160,4 @@ function authorize(request: Request): boolean {
   const fromHeader = request.headers.get("x-notify-secret");
   return fromQuery === expected || fromHeader === expected;
 }
+
