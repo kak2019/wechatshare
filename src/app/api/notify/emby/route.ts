@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 
 import { enqueueLibraryNotify } from "@/lib/wecom/batch";
 import {
-  formatEmbyNewItemMarkdown,
-  notifyLibraryIngest,
-  sendWecomMessage,
+  notifyEmbyNewItems,
+  sendWecomMarkdownV2,
 } from "@/lib/wecom/notify";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +14,7 @@ type EmbyWebhookPayload = {
   Description?: string;
   Event?: string;
   Item?: {
+    Id?: string;
     Name?: string;
     Type?: string;
     ProductionYear?: number;
@@ -22,13 +22,15 @@ type EmbyWebhookPayload = {
     SeasonName?: string;
     IndexNumber?: number;
     ParentIndexNumber?: number;
+    Overview?: string;
     Path?: string;
+    ImageTags?: { Primary?: string };
   };
   Server?: { Name?: string };
 };
 
 /**
- * Emby Webhook 接收端：新媒体入库后自动转发企业微信。
+ * Emby Webhook 接收端：新媒体入库后自动转发企业微信（markdown_v2 + 封面）。
  * 在 Emby → 通知/Webhooks 里填：
  *   https://你的域名/api/notify/emby
  * 事件勾选 Library → New Media Added
@@ -47,13 +49,15 @@ export async function POST(request: Request) {
 
     // 测试 webhook
     if (payload.Event === "system.webhooktest") {
-      const result = await sendWecomMessage({
-        msgtype: "markdown",
-        markdown: {
-          content:
-            "## 仙女的浪漫小屋影业\n\nEmby Webhook 连通测试成功 ✅\n\n_系统通知_",
-        },
-      });
+      const result = await sendWecomMarkdownV2(
+        [
+          `# 仙女的浪漫小屋影业`,
+          "",
+          "Emby Webhook 连通测试成功 ✅",
+          "",
+          "_系统通知_",
+        ].join("\n"),
+      );
       return NextResponse.json(result, { status: result.ok ? 200 : 502 });
     }
 
@@ -66,12 +70,15 @@ export async function POST(request: Request) {
     if (!item?.Name) {
       // 有些测试/摘要只有 Title
       if (payload.Title) {
-        const result = await sendWecomMessage({
-          msgtype: "markdown",
-          markdown: {
-            content: `## 仙女的浪漫小屋影业\n\n${payload.Title}\n\n_Emby 通知_`,
-          },
-        });
+        const result = await sendWecomMarkdownV2(
+          [
+            `# 仙女的浪漫小屋影业`,
+            "",
+            payload.Title,
+            "",
+            `_Emby 通知_`,
+          ].join("\n"),
+        );
         return NextResponse.json(result, { status: result.ok ? 200 : 502 });
       }
       return NextResponse.json({ ok: true, skipped: "no-item" });
@@ -88,38 +95,13 @@ export async function POST(request: Request) {
         type: item.Type,
         year: item.ProductionYear,
         seriesName: item.SeriesName,
+        overview: item.Overview,
+        embyId: item.Id,
+        imageTag: item.ImageTags?.Primary,
       },
       async (batch) => {
-        if (batch.length === 1) {
-          const one = batch[0];
-          await sendWecomMessage({
-            msgtype: "markdown",
-            markdown: {
-              content: formatEmbyNewItemMarkdown({
-                name: one.name,
-                type: one.type,
-                year: one.year,
-                seriesName: one.seriesName,
-              }),
-            },
-          });
-          return;
-        }
-        await notifyLibraryIngest({
-          title: "仙女的浪漫小屋影业 · 批量入库",
-          items: batch.map((b) => {
-            const year = b.year ? `（${b.year}）` : "";
-            const kind =
-              b.type === "Movie"
-                ? "电影"
-                : b.type === "Series"
-                  ? "剧集"
-                  : b.type === "Season"
-                    ? "季"
-                    : "";
-            return `${b.name}${year}${kind ? ` · ${kind}` : ""}`;
-          }),
-          note: `来自 Emby「${payload.Server?.Name || "媒体库"}」自动刮削`,
+        await notifyEmbyNewItems(batch, {
+          serverName: payload.Server?.Name,
         });
       },
     );

@@ -1,12 +1,7 @@
-type PendingItem = {
-  name: string;
-  type?: string;
-  year?: number | string | null;
-  seriesName?: string | null;
-};
+import type { LibraryNotifyItem } from "@/lib/wecom/notify";
 
 type BufferState = {
-  items: PendingItem[];
+  items: LibraryNotifyItem[];
   timer: ReturnType<typeof setTimeout> | null;
 };
 
@@ -24,14 +19,14 @@ function getBuffer(): BufferState {
   return globalForWecom.__wecomLibraryBuffer;
 }
 
-function itemKey(item: PendingItem): string {
-  return `${item.type || ""}::${item.seriesName || ""}::${item.name}::${item.year || ""}`;
+function itemKey(item: LibraryNotifyItem): string {
+  return `${item.type || ""}::${item.embyId || ""}::${item.seriesName || ""}::${item.name}::${item.year || ""}`;
 }
 
 /** 把新媒体加入缓冲，一段时间后合并成一条企业微信通知，避免一集一条刷屏 */
 export function enqueueLibraryNotify(
-  item: PendingItem,
-  flush: (items: PendingItem[]) => Promise<void>,
+  item: LibraryNotifyItem,
+  flush: (items: LibraryNotifyItem[]) => Promise<void>,
 ): void {
   // 单集太多，只保留 Movie / Series / Season
   if (item.type === "Episode") return;

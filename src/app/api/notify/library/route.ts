@@ -1,14 +1,24 @@
 import { NextResponse } from "next/server";
 
-import { notifyLibraryIngest } from "@/lib/wecom/notify";
+import {
+  notifyLibraryIngest,
+  sendWecomMarkdownV2,
+  type LibraryNotifyItem,
+} from "@/lib/wecom/notify";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * 刮削入库完成后的主动通知。
+ * 刮削入库完成后的主动通知（markdown_v2 + 剧封面）。
  * POST /api/notify/library
- * Body: { title?, items?: string[], note?, secret? }
+ * Body: {
+ *   title?,
+ *   items?: string[] | { name, type?, year?, embyId?, coverUrl?, overview? }[],
+ *   note?,
+ *   content?,  // 原始 markdown_v2
+ *   secret?
+ * }
  *
  * 可选鉴权：请求头 x-notify-secret 或 body.secret / ?secret=
  * 与环境变量 NOTIFY_SECRET 一致（未配置则不校验）
@@ -21,18 +31,14 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => ({}))) as {
       title?: string;
-      items?: string[];
+      items?: Array<string | LibraryNotifyItem>;
       note?: string;
       content?: string;
     };
 
-    // 兼容只传一段文案
+    // 兼容只传一段文案（按 markdown_v2 发送）
     if (body.content && !body.items?.length && !body.title) {
-      const { sendWecomMessage } = await import("@/lib/wecom/notify");
-      const result = await sendWecomMessage({
-        msgtype: "markdown",
-        markdown: { content: body.content },
-      });
+      const result = await sendWecomMarkdownV2(body.content);
       return NextResponse.json(result, { status: result.ok ? 200 : 502 });
     }
 
